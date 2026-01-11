@@ -2,10 +2,9 @@ name: Build and deploy in dev
 
 on:
   workflow_call: ## Trigger this workflow on PR or Commit Push
-    secrets:
-      GIT_PRIVATE_TOKEN:
-        required: true
-
+#    secrets:
+#      GIT_PRIVATE_TOKEN:
+#        required: true
     inputs:
       CLUSTER_NAME:
         type: string
