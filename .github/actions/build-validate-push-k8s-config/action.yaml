@@ -1,0 +1,17 @@
+name: Build, validate and push K8s configuration
+description: build-validate-push-k8s-config
+
+runs:
+  using: "composite"
+  steps:
+    - name: Clean Local repository
+      shell: bash
+      run: |
+        set -feu
+        echo "Starting step: Clean Local repository"
+        rm -rf generated deployed resources/kustomization.yaml
+        mkdir -p generated deployed resources
+        cd resources
+        kustomize init --recursive --autodetect .
+        cd ..
+        echo "Cleaning of Local repository completed successfully"

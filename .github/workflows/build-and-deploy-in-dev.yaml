@@ -1,0 +1,100 @@
+name: Build and deploy in dev
+
+on:
+  workflow_call: ## Trigger this workflow on PR or Commit Push
+    secrets:
+      GIT_PRIVATE_TOKEN:
+        required: true
+
+    inputs:
+      CLUSTER_NAME:
+        type: string
+        required: true
+      APPLICATION_ENV:
+        type: string
+        required: true
+
+permissions:
+  id-token: write # This is required for requesting the JWT
+  contents: read  # This is required for actions/checkout
+
+jobs:
+  workflow:
+    runs-on: "ubuntu-latest"
+    environment:
+      name: dev
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v6
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v5.1.1
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Set Environment variables
+        run: |
+          echo "AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)" >> $GITHUB_ENV
+          
+          APPLICATION_NAME=$(echo "${{ github.repository }}" | sed 's|.*/cloudhandson-kube||')
+          echo "APPLICATION_NAME=$APPLICATION_NAME" >> $GITHUB_ENV
+          echo "APPLICATION_NAME=$APPLICATION_NAME"
+          
+          export APPLICATION_NAMESPACE=$APPLICATION_NAME
+          echo "APPLICATION_NAMESPACE=$APPLICATION_NAMESPACE" >> $GITHUB_ENV
+          echo "APPLICATION_NAMESPACE=$APPLICATION_NAMESPACE"
+
+      - name: Create Application ECR repository
+        run: |
+          ECR_REPOSITORY="eks/${{ inputs.APPLICATION_ENV }}/${{ inputs.CLUSTER_NAME }}/${APPLICATION_NAMESPACE}/${APPLICATION_NAME}"
+          echo "ECR_REPOSITORY=$ECR_REPOSITORY" >> $GITHUB_ENV
+          
+          aws ecr describe-repositories --repository-names ${ECR_REPOSITORY} || \
+          aws ecr create-repository --repository-name ${ECR_REPOSITORY} --region ${{ vars.AWS_REGION }}
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      ## Creation of Docker Image
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push (${{ inputs.APPLICATION_ENV }}) image to ecr repository
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.event.pull_request.head.sha }}
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
+          build-args: |
+            AWS_ECR_REPOSITORY=${{ steps.login-ecr.outputs.registry }}
+            ECR_ENV=${{ inputs.APPLICATION_ENV }}
+          cache-from: type=registry,ref=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:buildcache
+          cache-to: type=registry,ref=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:buildcache,mode=max
+
+      #### Deployment of configuration in dev, uat, qa or prod
+      - name: Build, validate and push K8s configuration in (${{ inputs.APPLICATION_ENV }})
+        uses: a14T2n6g2l59Hgnsmb1Sc4L6CCY7U9XI2cmTor8/cloudhandson-eks-reusable-workflow/.github/actions/build-validate-push-k8s-config@master
+        with:
+          CLUSTER_ENV: ${{ inputs.APPLICATION_ENV }}
+          CLUSTER_NAME: ${{ inputs.CLUSTER_NAME }}
+          APPLICATION: ${{ env.APPLICATION }}
+          APPLICATION_NAMESPACE: ${{ env.APPLICATION_NAMESPACE }}
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.event.pull_request.head.sha }}
+          DNS_SUBDOMAIN: ${{ vars.DNS_SUBDOMAIN }}
+          GH_TOKEN: ${{ secrets.GIT_PRIVATE_TOKEN }}
