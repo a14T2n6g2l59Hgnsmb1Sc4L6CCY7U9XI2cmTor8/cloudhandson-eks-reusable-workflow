@@ -47,6 +47,12 @@ jobs:
           export APPLICATION_NAMESPACE=$APPLICATION_NAME
           echo "APPLICATION_NAMESPACE=$APPLICATION_NAMESPACE" >> $GITHUB_ENV
           echo "APPLICATION_NAMESPACE=$APPLICATION_NAMESPACE"
+          
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            echo "IMAGE_SHA=${{ github.event.pull_request.head.sha }}" >> $GITHUB_ENV
+          else
+            echo "IMAGE_SHA=${GITHUB_SHA}" >> $GITHUB_ENV
+          fi
 
       - name: Create Application ECR repository
         run: |
@@ -76,7 +82,7 @@ jobs:
           context: .
           push: true
           tags: |
-            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.event.pull_request.head.sha }}
+            ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_SHA }}
             ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
           build-args: |
             AWS_ECR_REPOSITORY=${{ steps.login-ecr.outputs.registry }}
