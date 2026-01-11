@@ -20,9 +20,7 @@ permissions:
 
 jobs:
   workflow:
-    runs-on: "ubuntu-latest"
-    environment:
-      name: dev
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout Repository
