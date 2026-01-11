@@ -69,6 +69,11 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
+      - name: Build the project
+        run: |
+          mvn clean install
+          mkdir -p build/dependency && (cd build/dependency; jar -xf ../libs/*.jar)
+
       ## Creation of Docker Image
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
