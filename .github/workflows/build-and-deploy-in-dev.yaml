@@ -77,6 +77,10 @@ jobs:
 
       - name: Build the project
         run: |
+          sed -i "s|CODEARTIFACT_REPOSITORY_URL|${{ env.CODEARTIFACT_REPOSITORY_URL }}|g" ./pom.xml          
+          sed -i "s|CODEARTIFACT_REPOSITORY_ID|${{ env.CODEARTIFACT_REPOSITORY_ID }}|g" ./pom.xml
+          sed -i "s|CODEARTIFACT_REPOSITORY_NAME|${{ env.CODEARTIFACT_REPOSITORY_ID }}|g" ./pom.xml
+          cat ./pom.xml
           mvn clean install
           mkdir -p build/dependency && (cd build/dependency; jar -xf ../libs/*.jar)
 
