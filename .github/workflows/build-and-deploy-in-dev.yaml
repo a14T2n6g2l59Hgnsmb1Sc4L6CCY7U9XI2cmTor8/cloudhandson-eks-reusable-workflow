@@ -118,3 +118,4 @@ jobs:
           IMAGE_TAG: ${{ env.IMAGE_SHA }}
           DNS_SUBDOMAIN: ${{ vars.DNS_SUBDOMAIN }}
           GH_TOKEN: ${{ secrets.GIT_PRIVATE_TOKEN }}
+
