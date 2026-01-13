@@ -1,0 +1,40 @@
+name: Login to AWS Codeartifact
+description: Login to AWS Codeartifact
+
+inputs:
+  CODEARTIFACT_DOMAIN:
+    description: AWS Code Artifact Domain
+    required: true
+  CODEARTIFACT_REPOSITORY:
+    description: AWS Code Artifact Repository
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Login to Codeartifact
+      shell: bash
+      run: |
+        AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text) 
+        
+        CODEARTIFACT_REPOSITORY_URL=$(aws codeartifact get-repository-endpoint --domain ${{ inputs.CODEARTIFACT_DOMAIN }} \
+        --repository ${{ inputs.CODEARTIFACT_REPOSITORY }} --format maven --query repositoryEndpoint --output text)
+        
+        CODEARTIFACTORY_AUTH_TOKEN=$(aws codeartifact get-authorization-token --domain ${{ inputs.CODEARTIFACT_DOMAIN }} \
+        --domain-owner ${AWS_ACCOUNT_ID} --query authorizationToken --output text)
+        
+        echo "AWS_ACCOUNT_ID=$AWS_ACCOUNT_ID" >> $GITHUB_ENV
+        echo "CODEARTIFACT_REPOSITORY_URL=$CODEARTIFACT_REPOSITORY_URL" >> $GITHUB_ENV
+        echo "CODEARTIFACT_REPOSITORY_ID=${{ inputs.CODEARTIFACT_DOMAIN }}-${{ inputs.CODEARTIFACT_REPOSITORY }}" >> $GITHUB_ENV
+        echo "CODEARTIFACT_USERNAME=aws" >> $GITHUB_ENV
+        echo "CODEARTIFACT_AUTH_TOKEN=$CODEARTIFACTORY_AUTH_TOKEN" >> $GITHUB_ENV
+        
+        # echo "$GITHUB_ENV" > secrets.txt
+        
+        aws s3 ls
+
+    # - name: Upload Artifacts
+    #   uses: actions/upload-artifact@v6
+    #   with:
+    #     name: SecretsVariables
+    #     path: "secrets.txt"
