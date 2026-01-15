@@ -84,14 +84,14 @@ jobs:
           sed -i "s|CODEARTIFACT_REPOSITORY_ID|${{ env.CODEARTIFACT_REPOSITORY_ID }}|g" ./pom.xml
           sed -i "s|CODEARTIFACT_REPOSITORY_NAME|${{ env.CODEARTIFACT_REPOSITORY_ID }}|g" ./pom.xml
           
-          sed -i "s|CODEARTIFACT_REPOSITORY_URL|${{ env.CODEARTIFACT_REPOSITORY_URL }}|g" ./mvn/settings.xml
-          sed -i "s|CODEARTIFACT_REPOSITORY_ID|${{ env.CODEARTIFACT_REPOSITORY_ID }}|g" ./mvn/settings.xml
+          sed -i "s|CODEARTIFACT_REPOSITORY_URL|${{ env.CODEARTIFACT_REPOSITORY_URL }}|g" ./.mvn/settings.xml
+          sed -i "s|CODEARTIFACT_REPOSITORY_ID|${{ env.CODEARTIFACT_REPOSITORY_ID }}|g" ./.mvn/settings.xml
           
           cat ./pom.xml
           cat ~/.m2/settings.xml
           
-          if [[ -f "./mvn/settings.xml" ]]; then
-            mvn -s ./mvn/settings.xml clean install
+          if [[ -f "./.mvn/settings.xml" ]]; then
+            mvn -s ./.mvn/settings.xml clean install
           else
             mvn clean install
           fi
