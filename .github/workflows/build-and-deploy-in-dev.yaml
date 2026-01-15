@@ -77,6 +77,9 @@ jobs:
 
       - name: Build the project
         run: |
+          ls -rlth ./
+          ls -rlth ./mvn/
+          
           sed -i "s|CODEARTIFACT_REPOSITORY_URL|${{ env.CODEARTIFACT_REPOSITORY_URL }}|g" ./pom.xml          
           sed -i "s|CODEARTIFACT_REPOSITORY_ID|${{ env.CODEARTIFACT_REPOSITORY_ID }}|g" ./pom.xml
           sed -i "s|CODEARTIFACT_REPOSITORY_NAME|${{ env.CODEARTIFACT_REPOSITORY_ID }}|g" ./pom.xml
