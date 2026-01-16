@@ -2,9 +2,6 @@ name: Build and deploy in dev
 
 on:
   workflow_call: ## Trigger this workflow on PR or Commit Push
-#    secrets:
-#      GIT_PRIVATE_TOKEN:
-#        required: true
     inputs:
       CLUSTER_NAME:
         type: string
@@ -45,7 +42,7 @@ jobs:
         run: |
           echo "AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)" >> $GITHUB_ENV
           
-          APPLICATION_NAME=$(echo "${{ github.repository }}" | sed "s|.*/cloudhandson-kube-mpft-||")
+          APPLICATION_NAME=$(echo "${{ github.repository }}" | sed "s|.*/cloudhandson-kube-${{ env.CLUSTER_NAME }}-||")
           APPLICATION_NAME="${APPLICATION_NAME,,}"
           echo "APPLICATION_NAME=$APPLICATION_NAME" >> $GITHUB_ENV
           echo "APPLICATION_NAME=$APPLICATION_NAME"
@@ -77,26 +74,24 @@ jobs:
 
       - name: Build the project
         run: |
-          ls -rlth ./
-          ls -rlth ./.mvn/
+          MVN_OPTS=" --no-transfer-progress -DskipTests"
+          POM_XML="pom.xml"
+          SETTINGS_XML=".mvn/settings.xml"
           
-          sed -i "s|CODEARTIFACT_REPOSITORY_URL|${{ env.CODEARTIFACT_REPOSITORY_URL }}|g" ./pom.xml          
-          sed -i "s|CODEARTIFACT_REPOSITORY_ID|${{ env.CODEARTIFACT_REPOSITORY_ID }}|g" ./pom.xml
-          sed -i "s|CODEARTIFACT_REPOSITORY_NAME|${{ env.CODEARTIFACT_REPOSITORY_ID }}|g" ./pom.xml
+          sed -i "s|CODEARTIFACT_REPOSITORY_URL|${{ env.CODEARTIFACT_REPOSITORY_URL }}|g" $POM_XML          
+          sed -i "s|CODEARTIFACT_REPOSITORY_ID|${{ env.CODEARTIFACT_REPOSITORY_ID }}|g" $POM_XML
+          sed -i "s|CODEARTIFACT_REPOSITORY_NAME|${{ env.CODEARTIFACT_REPOSITORY_ID }}|g" $POM_XML
           
-          sed -i "s|CODEARTIFACT_REPOSITORY_URL|${{ env.CODEARTIFACT_REPOSITORY_URL }}|g" ./.mvn/settings.xml
-          sed -i "s|CODEARTIFACT_REPOSITORY_ID|${{ env.CODEARTIFACT_REPOSITORY_ID }}|g" ./.mvn/settings.xml
-          
-          cat ./pom.xml
-          cat ~/.m2/settings.xml
-          
-          if [[ -f "./.mvn/settings.xml" ]]; then
-            mvn -s ./.mvn/settings.xml clean install --no-transfer-progress -DskipTests
-          else
-            mvn clean install --no-transfer-progress -DskipTests
+          if [[ -f "$SETTINGS_XML" ]]; then 
+            sed -i "s|CODEARTIFACT_REPOSITORY_URL|${{ env.CODEARTIFACT_REPOSITORY_URL }}|g" $SETTINGS_XML
+            sed -i "s|CODEARTIFACT_REPOSITORY_ID|${{ env.CODEARTIFACT_REPOSITORY_ID }}|g" $SETTINGS_XML
+            MVN_OPTS="$MVN_OPTS -s $SETTINGS_XML"
           fi
           
-          mkdir -p target/dependency && (cd target/dependency; jar -xf ../*.jar)
+          mvn clean install $MVN_OPTS        
+          
+          DEPENDENCY_DIR="target/dependency"
+          mkdir -p $DEPENDENCY_DIR && (cd $DEPENDENCY_DIR; jar -xf ../*.jar)
 
       ## Creation of Docker Image
       - name: Set up QEMU
