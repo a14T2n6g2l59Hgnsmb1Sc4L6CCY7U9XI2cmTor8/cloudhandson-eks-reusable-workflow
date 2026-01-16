@@ -91,12 +91,12 @@ jobs:
           cat ~/.m2/settings.xml
           
           if [[ -f "./.mvn/settings.xml" ]]; then
-            mvn -s ./.mvn/settings.xml clean install
+            mvn -s ./.mvn/settings.xml clean install --no-transfer-progress -DskipTests
           else
-            mvn clean install
+            mvn clean install --no-transfer-progress -DskipTests
           fi
           
-          mkdir -p build/dependency && (cd build/dependency; jar -xf ../libs/*.jar)
+          mkdir -p target/dependency && (cd target/dependency; jar -xf ../*.jar)
 
       ## Creation of Docker Image
       - name: Set up QEMU
