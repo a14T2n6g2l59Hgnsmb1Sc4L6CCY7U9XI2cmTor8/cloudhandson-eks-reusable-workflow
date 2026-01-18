@@ -1,0 +1,1 @@
+#          APPLICATION_NAME=$(echo "${{ github.repository }}" | sed "s|.*/cloudhandson-kube-mpft-||")
