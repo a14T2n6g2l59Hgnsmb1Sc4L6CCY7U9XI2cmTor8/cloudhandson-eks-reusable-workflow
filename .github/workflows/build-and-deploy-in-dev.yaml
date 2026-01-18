@@ -43,7 +43,6 @@ jobs:
           CODEARTIFACT_DOMAIN: ${{ secrets.CODEARTIFACT_DOMAIN }}
           CODEARTIFACT_REPOSITORY: ${{ secrets.CODEARTIFACT_REPOSITORY }}
 
-
       - name: Set Environment variables
         shell: bash
         run: |
