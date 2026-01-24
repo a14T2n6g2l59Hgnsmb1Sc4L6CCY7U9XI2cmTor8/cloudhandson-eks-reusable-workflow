@@ -195,7 +195,7 @@ jobs:
         run: |
           set -feu
           echo "Pulling the current image from ECR"
-          flux pull artifact oci://${AWS_ECR_CONFIG_REPO}:latest \
+          flux pull artifact oci://${AWS_ECR_REPOSITORY}:latest \
               --output deployed \
               --provider aws  \
               || true
