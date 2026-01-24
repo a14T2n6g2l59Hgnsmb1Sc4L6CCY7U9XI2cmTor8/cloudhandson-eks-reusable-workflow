@@ -151,6 +151,14 @@ jobs:
           kustomize build --enable-helm . | envsubst '${CLUSTER_COMPONENT},${CLUSTER_NAME},${CLUSTER_ENV},${AWS_ECR_REPOSITORY},${AWS_ACCOUNT_ID},${APPLICATION_NAME},${AWS_REGION},${COST_CENTER}, ${CERTIFICATE_ID}' > generated/manifests.yaml
           echo "Generate config files with kustomize completed successfully"
 
+      - name: Install kubeconform
+        run: |
+          set -euo pipefail
+          KUBECONFORM_VERSION="v0.6.7"
+          curl -sSL "https://github.com/yannh/kubeconform/releases/download/${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz" \
+            | tar -xz
+          sudo mv kubeconform /usr/local/bin/kubeconform
+          kubeconform -v
 
       - name: Validate with kubeconform 
         run: |
