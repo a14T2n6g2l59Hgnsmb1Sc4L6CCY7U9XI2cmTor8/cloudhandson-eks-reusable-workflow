@@ -1,0 +1,29 @@
+name: Build and deploy in dev
+
+on:
+  workflow_call: ## Trigger this workflow on PR or Commit Push
+    inputs:
+      CLUSTER_NAME:
+        type: string
+        required: true
+      APPLICATION_ENV:
+        type: string
+        required: true
+
+
+permissions:
+  id-token: write # This is required for requesting the JWT
+  contents: read  # This is required for actions/checkout
+
+
+jobs:
+  workflow:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Build and deploy on ${{ inputs.CLUSTER_NAME }}-${{ inputs.APPLICATION_ENV }}
+        shell: bash
+        run: |
+          echo "Test Workflow"
+          echo "CLUSTER_NAME: ${{ inputs.CLUSTER_NAME }}"
+          echo "APPLICATION_ENV: ${{ inputs.APPLICATION_ENV }}"
