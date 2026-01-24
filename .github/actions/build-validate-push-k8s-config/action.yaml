@@ -1,0 +1,159 @@
+name: "Build, validate and push K8s configuration"
+description: "Build, validate and push K8s configuration"
+
+
+inputs:
+  CLUSTER_ENV:
+    description: "Environment where the application is deployed"
+    required: true
+  CLUSTER_NAME:
+    description: "Cluster where the application is deployed"
+    required: true
+  APPLICATION_NAME:
+    description: "Application's name"
+    required: true
+  APPLICATION_NAMESPACE:
+    description: "Namespace where the application is deployed"
+    required: true
+  ECR_REGISTRY:
+    description: "Registry where to push the configuration"
+    required: true
+  IMAGE_TAG:
+    description: "Configuration Image tag in registry"
+    required: true
+  AWS_REGION:
+    description: "Region of the EKS Cluster"
+    default: "ap-south-1"
+  GH_TOKEN:
+    description: "Github Token"
+  GH_HOSTNAME:
+    description: "Github Organization"
+    default: github.com
+
+
+runs:
+  using: "composite"
+  steps:
+    - name: Clean Local repository
+      shell: bash
+      run: |
+        set -feu
+
+        echo "Starting step: Clean Local repository"
+        rm -rf generated deployed resources/kustomization.yaml
+        
+        mkdir -p generated deployed resources
+        cd resources
+        
+        kustomize init --recursive --autodetect .
+        
+        cd ..
+        echo "Cleaning of Local repository completed successfully"
+
+
+    - name: Generate Config files with Kustomize
+      env:
+        CLUSTER_ENV: ${{ inputs.CLUSTER_ENV }}
+        CLUSTER_NAME: ${{ inputs.CLUSTER_NAME }}
+        APPLICATION: ${{ inputs.APPLICATION }}
+        APPLICATION_NAMESPACE: ${{ inputs.APPLICATION_NAMESPACE }}
+        IMAGE_TAG: ${{ inputs.IMAGE_SHA }}
+        DNS_SUBDOMAIN: ${{ inputs.DNS_SUBDOMAIN }}
+        GH_TOKEN: ${{ secrets.GIT_PRIVATE_TOKEN }}
+        GH_HOSTNAME: ${{ secrets.GIT_PRIVATE_TOKEN }}
+      shell: bash
+      run: |
+        set -feu
+
+        echo "Starting step: Generate config files with kustomize"
+        
+        ## Replace references of the form $variable or ${variable} with their corresponding exported environment values.
+        envsubst < kustomization.yaml > kustomization.tpl.yaml
+        mv kustomization.tpl.yaml kustomization.yaml
+        
+        ## Shared EFS
+        echo "$GH_TOKEN" | gh auth login --hostname "$GH_HOSTNAME" --with-token
+        export EFS_SHARED_NAME=$(gh repo view a14T2n6g2l59Hgnsmb1Sc4L6CCY7U9XI2cmTor8/cloudhandson-kube-${APPLICATION_NAME} --json repositoryTopics | \
+        jq -r '.repositoryTopics[] | select( .name | contains("efs-shared-")) | .name' | sed "s/efs-shared-//")
+        
+        if [[ -n "${EFS_SHARED_NAME}" ]]; then
+        
+          ## Add a Shared's Volume and VolumeMount
+          cat << EOF > shared_volume.yaml
+        extraVolumes:
+          - name: data-shared-efs-storage
+            persistentVolumeClaim:
+              claimName: ${APPLICATION_NAME}-data-shared-efs-pvc
+        extraVolumeMounts:
+          - name: data-shared-efs-storage
+            mountPath: /shared
+        EOF
+        
+          yq -i '. *+ load("shared_volume.yaml")' values.yaml
+          rm shared_volume.yaml
+        fi
+        
+        kustomize build --enable-helm . || exit 1
+        kustomize build --enable-helm . | envsubstr '${CLUSTER_ENV},${CLUSTER_NAME},${APPLICATION},${APPLICATION_NAMESPACE},${AWS_REGION},${IMAGE_TAG}' > generated/manifests.yaml
+        
+        echo $?
+        echo "==============================================================================================="
+        echo "This is Configuration File generation step =============> Should display 1 if there is an error"
+        echo "==============================================================================================="
+        echo "Generation of Configuration Files with kustomize completed successfully"
+
+
+    - name: Validate with kubeconform
+      shell: bash
+      run: |
+        set -feu
+        echo "Starting step: Validate with kubeconform"
+        kubeconfirm -summary -schema-location default -schema-location \
+        'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}__{{.ResourceAPIVersion}}.json' \
+        -skip CustomResourceDefinition generated/
+        echo "Validation with kubeconform completed successfully"
+
+
+    - name: Create ECR repository
+      shell: bash
+      run: |
+        ECR_CONFIG_REPOSITORY="eks/config/${{ inputs.APPLICATION_ENV }}/${{ inputs.CLUSTER_NAME }}/${{ inputs.APPLICATION_NAMESPACE}}/${{ inputs.APPLICATION_NAME }}"
+        aws ecr describe-repositories --repository-names ${ECR_CONFIG_REPOSITORY} || \
+        aws ecr create-repository --repository-name ${ECR_CONFIG_REPOSITORY} --region ${{ vars.AWS_REGION }}
+
+
+    - name: Pull Old Image and Check difference with colordiff
+      env:
+        CONFIG_IMAGE_NAME: ${{ inputs.ECR_REGISTRY }}/eks/config/${{ inputs.APPLICATION_ENV }}/${{ inputs.CLUSTER_NAME }}/${{ inputs.APPLICATION_NAMESPACE}}/${{ inputs.APPLICATION_NAME }}
+      continue-on-error: true
+      shell: bash
+      run: |
+        set -feu
+        
+        echo "Starting step: Pull old image and colordiff"
+        flux pull artifact oci://${CONFIG_IMAGE_NAME}:latest --output deployed --provider aws || true
+        
+        echo "Running colordiff"
+        DIFF_OUTPUT=$(diff -u deployed/manifests.yaml generated/manifests.yaml | colordiff)
+        if [[ -n "$DIFF_OUTPUT" ]]; then
+          echo "$DIFF_OUTPUT"
+        else
+          echo "No differences found"
+        fi
+
+
+    - name: Push new image
+      env:
+        CONFIG_IMAGE_NAME: ${{ inputs.ECR_REGISTRY }}/eks/config/${{ inputs.APPLICATION_ENV }}/${{ inputs.CLUSTER_NAME }}/${{ inputs.APPLICATION_NAMESPACE}}/${{ inputs.APPLICATION_NAME }}
+      shell: bash
+      run: |
+        set -feu
+        
+        echo "Starting step: Push new image"
+        flux push artifact oci://$CONFIG_IMAGE_NAME:latest \
+          --path="./generated/" \
+          --source="$(git config --get remote.origin.url)" \
+          --revision="$(git tag --points-at HEAD)@sha1:$(git rev-parse HEAD)" |
+          --provider aws
+        
+        echo "New Configuration Image completed successfully"
