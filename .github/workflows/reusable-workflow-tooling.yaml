@@ -178,6 +178,13 @@ jobs:
           echo "Starting step: Generate config files with kustomize"
           kustomize build --enable-helm . | envsubst '${CLUSTER_COMPONENT},${CLUSTER_NAME},${CLUSTER_ENV},${AWS_ECR_REPOSITORY},${AWS_ACCOUNT_ID},${APPLICATION_NAME},${AWS_REGION},${COST_CENTER}, ${CERTIFICATE_ID}' > generated/manifests.yaml
           echo "Generate config files with kustomize completed successfully"
+          echo "=============================================="
+          echo "=============================================="
+          ls -rltha
+          ls -rltha generated
+          echo "=============================================="
+          echo "=============================================="
+          cat generated/manifests.yaml
 
 
       - name: Validate with kubeconform
