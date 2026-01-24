@@ -90,9 +90,16 @@ jobs:
         run: |
           AWS_ECR_CONFIG_REPO=eks/config/${{ env.CLUSTER_ENV }}/${{ env.CLUSTER_NAME }}/tooling/${{ env.APPLICATION_NAME }}
           AWS_ECR_REPOSITORY=${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/eks/config/${{ env.CLUSTER_ENV }}/${{ env.CLUSTER_NAME }}/tooling/${{ env.APPLICATION_NAME }}
+          
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            echo "IMAGE_SHA=${{ github.event.pull_request.head.sha }}" >> $GITHUB_ENV
+          else
+            echo "IMAGE_SHA=${GITHUB_SHA}" >> $GITHUB_ENV
+          fi
+          
           echo "AWS_ECR_REPOSITORY=$AWS_ECR_REPOSITORY" >> $GITHUB_ENV
           echo "AWS_ECR_CONFIG_REPO=$AWS_ECR_CONFIG_REPO" >> $GITHUB_ENV
-
+          
 
       - name: Clean local repo
         run: |
@@ -213,12 +220,12 @@ jobs:
         run: |
           set -feu
           echo "Pushing the new image to ECR"
-          flux push artifact oci://${AWS_ECR_REPOSITORY}:${{ github.event.pull_request.head.sha }} \
+          flux push artifact oci://${AWS_ECR_REPOSITORY}:${IMAGE_SHA} \
               --path="./generated/" \
               --source="$(git config --get remote.origin.url)" \
-              --revision="${{ github.event.pull_request.head.ref }}@sha1:${{ github.event.pull_request.head.sha }}" \
+              --revision="${{ github.event.pull_request.head.ref }}@sha1:${IMAGE_SHA}" \
               --provider aws
-          flux tag artifact oci://${AWS_ECR_REPOSITORY}:${{ github.event.pull_request.head.sha }} \
+          flux tag artifact oci://${AWS_ECR_REPOSITORY}:${IMAGE_SHA} \
               --tag latest
           echo "Push new image completed successfully"
 
