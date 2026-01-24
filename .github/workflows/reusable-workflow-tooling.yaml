@@ -1,0 +1,221 @@
+name: Tooling_reusable_workflow
+
+on:
+  workflow_call:
+    inputs:
+      CLUSTER_COMPONENT:
+        type: string
+        default: "eks"
+      COST_CENTER:
+        type: string
+        default: "cloudhandson-eks"
+      CLUSTER_NAME:
+        type: string
+        default: "common"
+      AWS_REGION:
+        type: string
+        default: ${{ vars.AWS_REGION }}
+      GITHUB_REPOSITORY:
+        type: string
+        default: ${{ github.repository }}
+      CLUSTER_ENV:
+        type: string
+        default: "lab"
+      CERTIFICATE_ID:
+        type: string
+    secrets:
+      AWS_ROLE_ARN:
+        required: true
+
+env:
+  GH_ORG: ${{ secrets.GH_ORG }}
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  Tooling_Pipeline:
+    runs-on: ubuntu-latest
+    env:
+      CLUSTER_COMPONENT: ${{ inputs.CLUSTER_COMPONENT }}
+      COST_CENTER: ${{ inputs.COST_CENTER }}
+      CLUSTER_NAME: ${{ inputs.CLUSTER_NAME }}
+      AWS_REGION: ${{ inputs.AWS_REGION }}
+      GITHUB_REPOSITORY: ${{ inputs.GITHUB_REPOSITORY }}
+      CLUSTER_ENV: ${{ inputs.CLUSTER_ENV }}
+      CERTIFICATE_ID: ${{ inputs.CERTIFICATE_ID }}
+
+    steps:
+      - uses: actions/checkout@v6
+
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v5.1.1
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ inputs.AWS_REGION }}
+
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2.0.1
+        with:
+          mask-password: 'true'
+
+
+      - name: Set repo environment variables
+        run: |
+          echo "APPLICATION_NAME=$(echo "${{ inputs.GITHUB_REPOSITORY }}" | sed 's|.*/cloudhandson-kube-||')" >> $GITHUB_ENV
+          echo "SHORT_SHA=$(echo $GITHUB_SHA | cut -c1-8)" >> $GITHUB_ENV        
+
+
+      - name: Get AWS Account ID & ECR variables
+        id: get-aws-account-id
+        run: |
+          set -feu
+          echo "AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)" >> $GITHUB_ENV
+
+
+      - name: Set ECR variables
+        run: |
+          AWS_ECR_CONFIG_REPO=eks/config/${{ env.CLUSTER_ENV }}/${{ env.CLUSTER_NAME }}/tooling/${{ env.APPLICATION_NAME }}
+          AWS_ECR_REPOSITORY=${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/eks/config/${{ env.CLUSTER_ENV }}/${{ env.CLUSTER_NAME }}/tooling/${{ env.APPLICATION_NAME }}
+          echo "AWS_ECR_REPOSITORY=$AWS_ECR_REPOSITORY" >> $GITHUB_ENV
+          echo "AWS_ECR_CONFIG_REPO=$AWS_ECR_CONFIG_REPO" >> $GITHUB_ENV
+
+
+      - name: Clean local repo
+        run: |
+          set -feu
+          echo "Starting step: Clean local repo"
+          rm -rf generated deployed resources/kustomization.yaml
+          mkdir -p generated deployed resources
+          cd resources
+          kustomize init --recursive --autodetect .
+          cd ..
+          echo "Clean local repo completed successfully"
+
+
+      - name: Pull, tag and push to ECR
+        run: |
+          set -feu
+
+          # echo "Starting kustomize build"
+          # kustomize build --enable-helm . > output.yaml
+          # echo "kustomize build completed"
+
+          # echo "Extracting images from YAML file"
+          # # Extract images from the provided YAML file
+          # images=$(yq '.spec.template.spec.containers[].image' output.yaml)
+          # echo "Images extracted"
+
+          # Copying the images to ECR
+          images=$(kustomize build --enable-helm . | envsubst | yq '.spec.template.spec.containers[].image' -ot)
+          for image in $images; do
+            echo "Copying image: $image"
+            
+            ociPath=$(echo $image | sed "s|.*dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/eks/||")
+            repo_name=$(echo $ociPath | sed "s|\([^:]*\):.*|\1|")
+
+            echo "Pulling image: $ociPath"
+            docker pull $ociPath
+
+            echo "Creating repository: $repo_name"
+            aws ecr create-repository --repository-name eks/$repo_name --region ${{ env.AWS_REGION }} || true
+
+            # -------------------------------------------------------------------------------------------------------------------------------------------- #
+            # Note MZE: Double piping into a 'true' might cause potential issues if the command fails for any reason other than the repo already existing
+            # As such, I suggest adding an initial check on the existence of the repo first, just to be on the safe side
+            # It works by checking for its existence, and checking if the error message is RepositoryNotFoundException
+            # The error output is sent to a grep command with a -v flag, which only returns values NOT matching the expression
+            # In other words, if there IS a RepositoryNotFoundException error, the $repo_exists variable will be empty
+            # -------------------------------------------------------------------------------------------------------------------------------------------- #
+
+            # repo_exists=$(aws ecr describe-repositories --repository-name eks/$repo_name --region ${{ env.AWS_REGION }} 2> >(grep -v RepositoryNotFoundException 1>&2))
+            # if [ $repo_exists=='' ]; then
+            #   aws ecr create-repository --repository-name eks/$repo_name --region ${{ env.AWS_REGION }}
+            # else
+            #   echo 'Repository already exists'
+            # fi
+
+            echo "Tagging image"
+            docker tag $ociPath ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/eks/$ociPath
+
+            echo "Pushing image"
+            docker push ${{ env.AWS_ACCOUNT_ID }}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/eks/$ociPath
+
+            echo "Image $image copied successfully"
+          done
+
+          echo "All images copied successfully"
+
+
+      - name: Generate config files with kustomize 
+        run: |
+          set -feu
+          echo "Starting step: Generate config files with kustomize"
+          kustomize build --enable-helm . | envsubst '${CLUSTER_COMPONENT},${CLUSTER_NAME},${CLUSTER_ENV},${AWS_ECR_REPOSITORY},${AWS_ACCOUNT_ID},${APPLICATION_NAME},${AWS_REGION},${COST_CENTER}, ${CERTIFICATE_ID}' > generated/manifests.yaml
+          echo "Generate config files with kustomize completed successfully"
+
+
+      - name: Validate with kubeconform 
+        run: |
+          set -feu
+          echo "Starting step: Validate with kubeconform"
+          kubeconform -summary -schema-location default -schema-location 'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}_{{.ResourceAPIVersion}}.json' -skip CustomResourceDefinition generated/
+          echo "Validate with kubeconform completed successfully"
+
+
+      - name: Create ECR repository
+        run: |
+          aws ecr create-repository --repository-name ${AWS_ECR_CONFIG_REPO} --region ${{ env.AWS_REGION }} || true
+
+          # -------------------------------------------------------------------------------------------------------------------------------------------- #
+          # NOTE MZE: Same as the previous ECR repo creation (see step 'pull tag and push to ECR' for more information)
+          # -------------------------------------------------------------------------------------------------------------------------------------------- #
+          # repo_exists=$(aws ecr describe-repositories --repository-name ${AWS_ECR_CONFIG_REPO} --region ${{ env.AWS_REGION }} 2> >(grep -v RepositoryNotFoundException 1>&2))
+          # if [ $repo_exists=='' ]; then
+          #   aws ecr create-repository --repository-name ${AWS_ECR_CONFIG_REPO} --region ${{ env.AWS_REGION }}
+          # else
+          #   echo 'Repository already exists'
+          # fi
+
+
+      - name: Pull old image and colordiff
+        # continue-on-error: true --- Note MZE: this was added because of the colordiff issue as far as I know, it can be removed
+        run: |
+          set -feu
+          echo "Pulling the current image from ECR"
+          flux pull artifact oci://${AWS_ECR_CONFIG_REPO}:latest \
+              --output deployed \
+              --provider aws  \
+              || true
+          
+          echo "Running colordiff..." 
+          DIFF_OUTPUT=$(diff -u deployed/manifests.yaml generated/manifests.yaml | colordiff)
+          if [ -n "$DIFF_OUTPUT" ]; then
+            echo "$DIFF_OUTPUT"
+          else
+            echo "No differences found."
+          fi
+
+
+      - name: Push new image
+        run: |
+          set -feu
+          echo "Pushing the new image to ECR"
+          flux push artifact oci://${AWS_ECR_REPOSITORY}:${{ github.event.pull_request.head.sha }} \
+              --path="./generated/" \
+              --source="$(git config --get remote.origin.url)" \
+              --revision="${{ github.event.pull_request.head.ref }}@sha1:${{ github.event.pull_request.head.sha }}" \
+              --provider aws
+          flux tag artifact oci://${AWS_ECR_REPOSITORY}:${{ github.event.pull_request.head.sha }} \
+              --tag latest
+          echo "Push new image completed successfully"
+
+
+    outputs:
+      registry: ${{ steps.login-ecr.outputs.registry }}
+      AWS_ACCOUNT_ID: ${{ env.AWS_ACCOUNT_ID }}
+
