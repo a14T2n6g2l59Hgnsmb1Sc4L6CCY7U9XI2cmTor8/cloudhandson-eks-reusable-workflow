@@ -102,6 +102,13 @@ jobs:
 
           if [[ -n $applications_list ]]; then
             echo "x equals x"
+            export REPOS_FOUND=true
+               
+            for application in $applications_list
+            do
+              export APPLICATION_NAME=$(echo $application | jq -r '.name | sub("^cloudhandson-kube-"; "")')
+              echo "########### Processing $APPLICATION_NAME"
+            end
           else
             echo "x not equals x"
           fi
