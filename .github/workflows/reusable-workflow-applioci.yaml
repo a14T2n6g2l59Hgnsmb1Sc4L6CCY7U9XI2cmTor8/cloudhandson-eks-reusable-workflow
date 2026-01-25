@@ -106,7 +106,7 @@ jobs:
             for application in $applications_list
             do 
               echo "In loop"
-              export APPLICATION_NAME=$(echo $application | jq -r '.name | sub("^cloudhandson-kube-${CLUSTER_NAME}"; "")')
+              export APPLICATION_NAME=$(echo $application | jq -r '.name | sub("^cloudhandson-kube-mpft"; "")')
               echo "########### Processing $APPLICATION_NAME"
               export APPLICATION_NAMESPACE=$APPLICATION_NAME
             done
