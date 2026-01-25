@@ -100,7 +100,7 @@ jobs:
           applications_list=$(gh repo list "$GH_ORG" --no-archived --limit 300 --json name,repositoryTopics | jq -c '.[] | (.repositoryTopics // []) as $topics | select(($topics | map(.name) | index("${{ env.CLUSTER_ENV }}") and index("cluster-${{ env.CLUSTER_NAME }}")))')
           echo "Applications list1 = $applications_list"
 
-          if [[ "x"=="x" ]]; then
+          if [[ -n $applications_list ]]; then
             echo "x equals x"
           else
             echo "x not equals x"
