@@ -118,8 +118,8 @@ jobs:
               cat bin/generate/templates/namespace.yaml | envsubst '${APPLICATION_NAME},${APPLICATION_NAMESPACE}' > resources-generated/$CLUSTER_ENV/$CLUSTER_NAME/$APPLICATION_NAMESPACE/namespace.yaml
               cat bin/generate/templates/secretstore.yaml | envsubst '${APPLICATION_NAME},${APPLICATION_NAMESPACE}' > resources-generated/$CLUSTER_ENV/$CLUSTER_NAME/$APPLICATION_NAMESPACE/$APPLICATION_NAME/secretstore.yaml
               cat bin/generate/templates/serviceaccount.yaml | envsubst '${APPLICATION_NAME},${APPLICATION_NAMESPACE},${account_id},${CLUSTER_ENV},${CLUSTER_NAME}' > resources-generated/$CLUSTER_ENV/$CLUSTER_NAME/$APPLICATION_NAMESPACE/$APPLICATION_NAME/serviceaccount.yaml
-              cat bin/generate/templates/notificationprovider.yaml | envsubst '${APPLICATION_NAME}' > resources-generated/$CLUSTER_ENV/$CLUSTER_NAME/$APPLICATION_NAMESPACE/$APPLICATION_NAME/notificationprovider.yaml
-              cat bin/generate/templates/notificationalert.yaml | envsubst '${APPLICATION_NAME}' > resources-generated/$CLUSTER_ENV/$CLUSTER_NAME/$APPLICATION_NAMESPACE/$APPLICATION_NAME/notificationalert.yaml
+#              cat bin/generate/templates/notificationprovider.yaml | envsubst '${APPLICATION_NAME}' > resources-generated/$CLUSTER_ENV/$CLUSTER_NAME/$APPLICATION_NAMESPACE/$APPLICATION_NAME/notificationprovider.yaml
+#              cat bin/generate/templates/notificationalert.yaml | envsubst '${APPLICATION_NAME}' > resources-generated/$CLUSTER_ENV/$CLUSTER_NAME/$APPLICATION_NAMESPACE/$APPLICATION_NAME/notificationalert.yaml
           
               echo "########### End for $APPLICATION_NAME"
             done
