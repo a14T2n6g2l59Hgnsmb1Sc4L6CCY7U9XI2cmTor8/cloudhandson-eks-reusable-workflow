@@ -96,19 +96,10 @@ jobs:
               export DNS_SUBDOMAIN="cloudhandson-noprod"
               ;;
             esac
-
+               
           applications_list=$(gh repo list "$GH_ORG" --no-archived --limit 300 --json name,repositoryTopics | jq -c '.[] | (.repositoryTopics // []) as $topics | select(($topics | map(.name) | index("${{ env.CLUSTER_ENV }}") and index("cluster-${{ env.CLUSTER_NAME }}")))')
-
-#          applications_list=$(gh repo list "$GH_ORG" --no-archived --limit 300 --json name,repositoryTopics | jq -r '.[] | (.repositoryTopics // [] | map(.name)) as $topics | select(($topics | index("dev")) and ($topics | index("cluster-mpft"))) | .name')
-     
           echo "Applications list1 = $applications_list"
 
-          if [[ -n $applications_list ]]; then
-            echo "x equals x"
-            export REPOS_FOUND=true
-          else
-            echo "x not equals x"
-          fi
 #          if [[ -n "$applications_list" ]]; then
 #            export REPOS_FOUND=true
 
