@@ -121,9 +121,16 @@ jobs:
 
               echo "########### End for $APPLICATION_NAME"
             done
+               
+            cd resources-generated/${CLUSTER_ENV}/${CLUSTER_NAME}
+            kustomize init --recursive --autodetect
           else
             echo "if condition false"
+            export REPOS_FOUND=false
+            echo "No repositories found for environment ${CLUSTER_ENV} and cluster ${CLUSTER_NAME}. Skipping"
           fi
+          
+          echo "REPOS_FOUND=$REPOS_FOUND" >> $GITHUB_ENV
 
 #          if [[ -n "$applications_list" ]]; then
 #            export REPOS_FOUND=true
