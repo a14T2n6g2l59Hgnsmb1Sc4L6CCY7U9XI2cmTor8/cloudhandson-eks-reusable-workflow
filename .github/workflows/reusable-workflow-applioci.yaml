@@ -204,25 +204,25 @@ jobs:
           echo "All YAML files are correctly referenced"
 
 
-#      - name: Generate kustomization.yaml from template
-#        if: env.REPOS_FOUND == 'true'
-#        run: |
-#          set -euo pipefail
-#          cat kustomization.tpl.yaml | envsubst '${CLUSTER_ENV},${CLUSTER_NAME},${AWS_ACCOUNT_ID}' > kustomization.yaml
+      - name: Generate kustomization.yaml from template
+        if: env.REPOS_FOUND == 'true'
+        run: |
+          set -euo pipefail
+          cat kustomization.tpl.yaml | envsubst '${CLUSTER_ENV},${CLUSTER_NAME},${AWS_ACCOUNT_ID}' > kustomization.yaml
 
 
-#      - name: Build kustomize manifests
-#        if: env.REPOS_FOUND == 'true'
-#        run: |
-#          set -euo pipefail
-#          kustomize build --enable-helm . | envsubst '${AWS_ACCOUNT_ID},${AWS_REGION},${CLUSTER_ENV},${CLUSTER_NAME}' > generated/manifests.yaml
+      - name: Build kustomize manifests
+        if: env.REPOS_FOUND == 'true'
+        run: |
+          set -euo pipefail
+          kustomize build --enable-helm . | envsubst '${AWS_ACCOUNT_ID},${AWS_REGION},${CLUSTER_ENV},${CLUSTER_NAME}' > generated/manifests.yaml
 
 
-#      - name: Validate manifests
-#        if: env.REPOS_FOUND == 'true'
-#        run: |
-#          set -eu
-#          kubeconform -summary -skip CustomResourceDefinition,Kustomization,OCIRepository,Gateway,SecretStore generated/
+      - name: Validate manifests
+        if: env.REPOS_FOUND == 'true'
+        run: |
+          set -eu
+          kubeconform -summary -skip CustomResourceDefinition,Kustomization,OCIRepository,Gateway,SecretStore generated/
 
 
 #      - name: Login to Amazon ECR
