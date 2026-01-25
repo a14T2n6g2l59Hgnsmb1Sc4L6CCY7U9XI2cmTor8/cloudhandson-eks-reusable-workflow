@@ -103,6 +103,10 @@ jobs:
           if [[ -n "$applications_list" ]]; then
             echo "if condition true"
             export REPOS_FOUND=true
+            for application in $applications_list
+            do 
+              echo "In loop"
+            end
           else
             echo "if condition false"
           fi
