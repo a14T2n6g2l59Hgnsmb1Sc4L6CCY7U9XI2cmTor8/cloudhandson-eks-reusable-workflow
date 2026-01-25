@@ -84,18 +84,18 @@ jobs:
           mkdir -p generated deployed
 
 
-#      - name: Pre-build
-#        run: |
-#          set -euo pipefail
-#          case ${CLUSTER_ENV} in
-#            prod)
-#              export DNS_SUBDOMAIN="cloudhandson"
-#              ;;
-#            *)
-#              export DNS_SUBDOMAIN="cloudhandson-noprod"
-#              ;;
-#            esac
-#
+      - name: Pre-build
+        run: |
+          set -euo pipefail
+          case ${CLUSTER_ENV} in
+            prod)
+              export DNS_SUBDOMAIN="cloudhandson"
+              ;;
+            *)
+              export DNS_SUBDOMAIN="cloudhandson-noprod"
+              ;;
+            esac
+
 #          applications_list=$(gh repo list "$GH_ORG" --no-archived --limit 300 --json name,repositoryTopics | jq -c '.[] | (.repositoryTopics // []) as $topics | select(($topics | map(.name) | index("${{ env.CLUSTER_ENV }}") and index("cluster-${{ env.CLUSTER_NAME }}")))')
 #          echo "Applications list1 = $applications_list"
 #
