@@ -1,0 +1,244 @@
+name: Generate Application OCI
+
+on:
+  workflow_call:
+    inputs:
+      CLUSTER_NAME:
+        type: string
+        required: true
+      AWS_REGION:
+        type: string
+        default: "ap-south-1"
+      GITHUB_REPOSITORY:
+        type: string
+        default: ${{ github.repository }}
+      CLUSTER_ENV:
+        type: string
+        default: "dev"
+    
+    secrets:
+      AWS_ROLE_ARN:
+        required: true
+      GIT_TOKEN_PERSONAL:
+        required: true
+
+
+permissions:
+  id-token: write
+  contents: read
+
+
+jobs:
+  build-and-deploy:
+    runs-on: ${{ vars.EKS_RUNNER }}
+    
+    env:
+      GH_HOSTNAME: github.com
+      GH_ORG: a14T2n6g2l59Hgnsmb1Sc4L6CCY7U9XI2cmTor8
+      CLUSTER_ENV: ${{ inputs.CLUSTER_ENV }}
+      CLUSTER_NAME: ${{ inputs.CLUSTER_NAME }}
+      AWS_ROLE: ${{ secrets.AWS_ROLE_ARN }}
+      AWS_REGION: ${{ inputs.AWS_REGION }}
+      AWS_ECR_REPOSITORY: "eks/config/${{ inputs.CLUSTER_ENV }}/${{ inputs.CLUSTER_NAME }}/tooling/appli-oci"
+    
+    steps:
+
+      - name: Checkout repo
+        uses: actions/checkout@v6
+
+
+      - name: Authenticate GitHub CLI
+        run: |
+          set -euo pipefail
+          gh config set git_protocol ssh
+          echo "$GIT_TOKEN_PERSONAL" | gh auth login --hostname "$GH_HOSTNAME" --with-token
+          if gh auth status >/dev/null 2>&1; then
+              echo "Github CLI authenticated successfully"
+          else
+              echo "Github CLI authentication failed"
+              exit 1
+          fi
+        env:
+          GIT_TOKEN_PERSONAL: ${{ secrets.GIT_TOKEN_PERSONAL }}
+
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v5.1.1
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+
+      - name: Get AWS Account ID
+        id: get-aws-account-id
+        run: |
+          set -eu
+          echo "AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)" >> $GITHUB_ENV
+
+
+      - name: Clean and create folders
+        run: |
+          set -eu
+          rm -rf generated deployed
+          rm -rf resources-generated/${CLUSTER_ENV}/${CLUSTER_NAME}
+          mkdir -p generated deployed
+
+
+      - name: Pre-build
+        run: |
+          set -euo pipefail
+          case ${CLUSTER_ENV} in 
+            prod)
+              export DNS_SUBDOMAIN="cloudhandson"
+              ;;
+            *)
+              export DNS_SUBDOMAIN="cloudhandson-noprod"
+              ;;
+            esac
+          
+          applications_list=$(gh repo list "$GH_ORG" --no-archived --limit 300 --json name,repositoryTopics | jq -c '.[] | (.repositoryTopics // []) as $topics | select(($topics | map(.name) | index("${{ env.CLUSTER_ENV }}") and index("cluster-${{ env.CLUSTER_NAME }}")))')
+          echo "Applications list1 = $applications_list"
+          
+          if [ -n "$applications_list" ]; then
+            export REPOS_FOUND=true
+          
+            for application in $applications_list
+            do
+              export APPLICATION_NAME=$(echo $application | jq -r '.name | sub("^cloudhandson-kube-"; "")')
+          
+              echo "########### Processing $APPLICATION_NAME"
+              export APPLICATION_NAMESPACE=$APPLICATION_NAME
+#              export SPLUNK_EFS_ID=$(aws efs describe-file-systems --query "FileSystems[?Name == 'eks-$CLUSTER_NAME-$CLUSTER_ENV-splunk-efs'].[FileSystemId]" --output text)
+#              export SPLUNK_ACCESS_POINT_ID=$(aws efs describe-access-points --query "AccessPoints[?Name == '$APPLICATION_NAMESPACE-splunk-access-point' && FileSystemId == '$SPLUNK_EFS_ID'].AccessPointId" --output text)
+#              export DATA_EFS_ID=$(aws efs describe-file-systems --query "FileSystems[?Name == 'eks-$CLUSTER_NAME-$CLUSTER_ENV-data-efs'].[FileSystemId]" --output text)
+#              export DATA_ACCESS_POINT_ID=$(aws efs describe-access-points --query "AccessPoints[?Name == '$APPLICATION_NAMESPACE-data-access-point' && FileSystemId == '$DATA_EFS_ID'].AccessPointId" --output text)
+              mkdir -p resources-generated/$CLUSTER_ENV/$CLUSTER_NAME/$APPLICATION_NAMESPACE/$APPLICATION_NAME
+
+              cat bin/generate/templates/ks.yaml | envsubst '${APPLICATION_NAME},${APPLICATION_NAMESPACE}' | yq '. *=load("bin/generate/templates/ks_app.yaml")' - > resources-generated/$CLUSTER_ENV/$CLUSTER_NAME/$APPLICATION_NAMESPACE/$APPLICATION_NAME/ks.yaml
+              cat bin/generate/templates/ocirepo.yaml | envsubst '${APPLICATION_NAME},${APPLICATION_NAMESPACE}' > resources-generated/$CLUSTER_ENV/$CLUSTER_NAME/$APPLICATION_NAMESPACE/$APPLICATION_NAME/ocirepo.yaml
+          
+              cat bin/generate/templates/namespace.yaml | envsubst '${APPLICATION_NAME},${APPLICATION_NAMESPACE}' > resources-generated/$CLUSTER_ENV/$CLUSTER_NAME/$APPLICATION_NAMESPACE/namespace.yaml
+              cat bin/generate/templates/gw.yaml | envsubst '${APPLICATION_NAME},${APPLICATION_NAMESPACE},${CLUSTER_NAME},${CLUSTER_ENV},${DNS_SUBDOMAIN}' > resources-generated/$CLUSTER_ENV/$CLUSTER_NAME/$APPLICATION_NAMESPACE/$APPLICATION_NAME/gw.yaml
+              cat bin/generate/templates/secretstore.yaml | envsubst '${APPLICATION_NAME},${APPLICATION_NAMESPACE}' > resources-generated/$CLUSTER_ENV/$CLUSTER_NAME/$APPLICATION_NAMESPACE/$APPLICATION_NAME/secretstore.yaml
+              cat bin/generate/templates/serviceaccount.yaml | envsubst '${APPLICATION_NAME},${APPLICATION_NAMESPACE},${account_id},${CLUSTER_ENV},${CLUSTER_NAME}' > resources-generated/$CLUSTER_ENV/$CLUSTER_NAME/$APPLICATION_NAMESPACE/$APPLICATION_NAME/serviceaccount.yaml
+#              cat bin/generate/templates/persistentvolume.yaml | envsubst '${APPLICATION_NAMESPACE},${SPLUNK_EFS_ID},${SPLUNK_ACCESS_POINT_ID},${DATA_EFS_ID},${DATA_ACCESS_POINT_ID}' > resources-generated/$CLUSTER_ENV/$CLUSTER_NAME/$APPLICATION_NAMESPACE/$APPLICATION_NAME/persistentvolume.yaml
+#              cat bin/generate/templates/persistentvolumeclaim.yaml | envsubst '${APPLICATION_NAMESPACE},${APPLICATION_NAME}' > resources-generated/$CLUSTER_ENV/$CLUSTER_NAME/$APPLICATION_NAMESPACE/$APPLICATION_NAME/persistentvolumeclaim.yaml
+          
+              # cat bin/generate/templates/notificationprovider.yaml | envsubst '${APPLICATION_NAME}' > resources-generated/$CLUSTER_ENV/$CLUSTER_NAME/$APPLICATION_NAMESPACE/$APPLICATION_NAME/notificationprovider.yaml
+              # cat bin/generate/templates/notificationalert.yaml | envsubst '${APPLICATION_NAME}' > resources-generated/$CLUSTER_ENV/$CLUSTER_NAME/$APPLICATION_NAMESPACE/$APPLICATION_NAME/notificationalert.yaml
+          
+#              export EFS_SHARED_NAME=`gh repo view a14T2n6g2l59Hgnsmb1Sc4L6CCY7U9XI2cmTor8/cloudhandson-kube-${APPLICATION_NAME} --json repositoryTopics | jq -r '.repositoryTopics[] | select( .name | contains("efs-shared-")) | .name' | sed "s/efs-shared-//"`
+#              if [ -n "${EFS_SHARED_NAME}" ]; then
+#                  export EFS_PERIMETER_ACCESS_POINT_ID=$(aws efs describe-access-points --query "AccessPoints[?Name == 'shared-${EFS_SHARED_NAME}-global-access-point' && FileSystemId == '$DATA_EFS_ID'].AccessPointId" --output text)
+#                  cat bin/generate/templates/shared_pv_pvc.yaml | envsubst '${APPLICATION_NAMESPACE},${EFS_SHARED_NAME},${DATA_EFS_ID},${EFS_PERIMETER_ACCESS_POINT_ID}' > resources-generated/${CLUSTER_ENV}/${CLUSTER_NAME}/$APPLICATION_NAMESPACE/$APPLICATION_NAME/shared_pv_pvc.yaml
+#              fi
+          
+              echo "########### End for $APPLICATION_NAME"
+          
+            done
+          
+            cd resources-generated/${CLUSTER_ENV}/${CLUSTER_NAME}
+            kustomize init --recursive --autodetect
+          else
+            export REPOS_FOUND=false
+            echo "No repositories found for environment ${CLUSTER_ENV} and cluster ${CLUSTER_NAME}. Skipping"
+          fi
+          echo "REPOS_FOUND=$REPOS_FOUND" >> $GITHUB_ENV
+
+
+      - name: Validate kustomization resources
+        if: env.REPOS_FOUND == 'true'
+        run: |
+          set -eu
+          echo "validating kustomization.yaml resources..."
+          cd resources-generated/${CLUSTER_ENV}/${CLUSTER_NAME}
+          mapfile -t yaml_files < <(find . -type f -name "*.yaml" ! -name "kustomization.yaml" -print | sed 's|^\./||')
+          mapfile -t kustomize_resources < <(yq -r '.resources[]?' kustomization.yaml)
+          
+          missing=false
+          for file in "${yaml_files[@]}"; do
+          if [[ ! " ${kustomize_resources[*]} " =~ " $file " ]]; then
+            echo "ERROR: $file is not referenced in kustomization.yaml"
+            missing=true
+          fi
+          done
+          
+          if [[ $missing == true ]]; then
+            echo "One or more YAML files are missing from kustomization.yaml"
+            exit 1
+          fi
+          
+          echo "All YAML files are correctly referenced"
+
+
+      - name: Generate kustomization.yaml from template
+        if: env.REPOS_FOUND == 'true'
+        run: |
+          set -euo pipefail
+          cat kustomization.tpl.yaml | envsubst '${CLUSTER_ENV},${CLUSTER_NAME},${AWS_ACCOUNT_ID}' > kustomization.yaml
+
+
+      - name: Build kustomize manifests
+        if: env.REPOS_FOUND == 'true'
+        run: |
+          set -euo pipefail
+          kustomize build --enable-helm . | envsubst '${AWS_ACCOUNT_ID},${AWS_REGION},${CLUSTER_ENV},${CLUSTER_NAME}' > generated/manifests.yaml
+
+
+      - name: Validate manifests
+        if: env.REPOS_FOUND == 'true'
+        run: |
+          set -eu
+          kubeconform -summary -skip CustomResourceDefinition,Kustomization,OCIRepository,Gateway,SecretStore generated/
+
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        if: env.REPOS_FOUND == 'true'
+        uses: aws-actions/amazon-ecr-login@v2.0.1
+        with:
+          mask-password: 'true'
+
+
+      - name: Login to Amazon ECR via docker
+        if: env.REPOS_FOUND == 'true'
+        run: |
+          set -euo pipefail
+          aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+
+
+      - name: Create ECR repository
+        if: env.REPOS_FOUND == 'true'
+        run: |
+          set -eu
+          aws ecr create-repository --repository-name ${AWS_ECR_REPOSITORY} --region ${{ env.AWS_REGION }} || true
+          
+          # -------------------------------------------------------------------------------------------------------------------------------------------- #
+          # NOTE MZE: Same as the previous ECR repo creation (see step 'pull tag and push to ECR' for more information)
+          # -------------------------------------------------------------------------------------------------------------------------------------------- #
+          # repo_exists=$(aws ecr describe-repositories --repository-name ${AWS_ECR_REPOSITORY} --region ${{ env.AWS_REGION }} 2> >(grep -v RepositoryNotFoundException 1>&2))
+          # if [ $repo_exists=='' ]; then
+          #   aws ecr create-repository --repository-name ${AWS_ECR_REPOSITORY} --region ${{ env.AWS_REGION }}
+          # else
+          #   echo 'Repository already exists'
+          # fi
+
+
+      - name: Compare generated vs deployed manifests
+        if: env.REPOS_FOUND == 'true'
+        run: |
+          set -eu
+          flux pull artifact oci://${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${AWS_ECR_REPOSITORY}:latest \
+            --output deployed \
+            --provider aws
+          diff -u deployed/manifests.yaml generated/manifests.yaml | colordiff
+      
+      # - name: Push
+      #   if: env.REPOS_FOUND == 'true'
+      #   run: |
+      #     set -eu
+      #     flux push artifact oci://${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${AWS_ECR_REPOSITORY}:latest \
+      #     --path="./generated/" \
+      #     --source="$(git config --get remote.origin.url)" \
+      #     --revision="$(git tag --points-at HEAD)@sha1:$(git rev-parse HEAD)" \
+      #     --provider aws
