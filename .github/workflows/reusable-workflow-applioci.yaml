@@ -114,7 +114,7 @@ jobs:
 ###              export DATA_ACCESS_POINT_ID=$(aws efs describe-access-points --query "AccessPoints[?Name == '$APPLICATION_NAMESPACE-data-access-point' && FileSystemId == '$DATA_EFS_ID'].AccessPointId" --output text)
 #              mkdir -p resources-generated/$CLUSTER_ENV/$CLUSTER_NAME/$APPLICATION_NAMESPACE/$APPLICATION_NAME
 
-              cat bin/generate/templates/ks.yaml | envsubst '${APPLICATION_NAME},${APPLICATION_NAMESPACE}' | yq '. *=load("bin/generate/templates/ks_app.yaml")' - > resources-generated/$CLUSTER_ENV/$CLUSTER_NAME/$APPLICATION_NAMESPACE/$APPLICATION_NAME/ks.yaml
+#              cat bin/generate/templates/ks.yaml | envsubst '${APPLICATION_NAME},${APPLICATION_NAMESPACE}' | yq '. *=load("bin/generate/templates/ks_app.yaml")' - > resources-generated/$CLUSTER_ENV/$CLUSTER_NAME/$APPLICATION_NAMESPACE/$APPLICATION_NAME/ks.yaml
 #              cat bin/generate/templates/ocirepo.yaml | envsubst '${APPLICATION_NAME},${APPLICATION_NAMESPACE}' > resources-generated/$CLUSTER_ENV/$CLUSTER_NAME/$APPLICATION_NAMESPACE/$APPLICATION_NAME/ocirepo.yaml
 
 #              cat bin/generate/templates/namespace.yaml | envsubst '${APPLICATION_NAME},${APPLICATION_NAMESPACE}' > resources-generated/$CLUSTER_ENV/$CLUSTER_NAME/$APPLICATION_NAMESPACE/namespace.yaml
@@ -140,8 +140,8 @@ jobs:
 #            cd resources-generated/${CLUSTER_ENV}/${CLUSTER_NAME}
 #            kustomize init --recursive --autodetect
           else
-            export REPOS_FOUND=false
-            echo "No repositories found for environment ${CLUSTER_ENV} and cluster ${CLUSTER_NAME}. Skipping"
+#            export REPOS_FOUND=false
+#            echo "No repositories found for environment ${CLUSTER_ENV} and cluster ${CLUSTER_NAME}. Skipping"
           fi
           echo "REPOS_FOUND=$REPOS_FOUND" >> $GITHUB_ENV
 
