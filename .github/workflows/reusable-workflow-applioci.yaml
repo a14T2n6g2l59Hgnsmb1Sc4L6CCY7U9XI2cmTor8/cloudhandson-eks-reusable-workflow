@@ -85,6 +85,7 @@ jobs:
 
 
       - name: Pre-build
+        shell: bash
         run: |
           set -euo pipefail
           case ${CLUSTER_ENV} in
