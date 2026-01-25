@@ -104,10 +104,10 @@ jobs:
 
             for application in $applications_list
             do
-              export APPLICATION_NAME=$(echo $application | jq -r '.name | sub("^cloudhandson-kube-"; "")')
+#              export APPLICATION_NAME=$(echo $application | jq -r '.name | sub("^cloudhandson-kube-"; "")')
 
-              echo "########### Processing $APPLICATION_NAME"
-              export APPLICATION_NAMESPACE=$APPLICATION_NAME
+#              echo "########### Processing $APPLICATION_NAME"
+#              export APPLICATION_NAMESPACE=$APPLICATION_NAME
 ###              export SPLUNK_EFS_ID=$(aws efs describe-file-systems --query "FileSystems[?Name == 'eks-$CLUSTER_NAME-$CLUSTER_ENV-splunk-efs'].[FileSystemId]" --output text)
 ##              export SPLUNK_ACCESS_POINT_ID=$(aws efs describe-access-points --query "AccessPoints[?Name == '$APPLICATION_NAMESPACE-splunk-access-point' && FileSystemId == '$SPLUNK_EFS_ID'].AccessPointId" --output text)
 ##              export DATA_EFS_ID=$(aws efs describe-file-systems --query "FileSystems[?Name == 'eks-$CLUSTER_NAME-$CLUSTER_ENV-data-efs'].[FileSystemId]" --output text)
@@ -133,7 +133,7 @@ jobs:
 ##                  cat bin/generate/templates/shared_pv_pvc.yaml | envsubst '${APPLICATION_NAMESPACE},${EFS_SHARED_NAME},${DATA_EFS_ID},${EFS_PERIMETER_ACCESS_POINT_ID}' > resources-generated/${CLUSTER_ENV}/${CLUSTER_NAME}/$APPLICATION_NAMESPACE/$APPLICATION_NAME/shared_pv_pvc.yaml
 ###              fi
 
-              echo "########### End for $APPLICATION_NAME"
+#              echo "########### End for $APPLICATION_NAME"
 
             done
 
@@ -143,7 +143,7 @@ jobs:
 #            export REPOS_FOUND=false
 #            echo "No repositories found for environment ${CLUSTER_ENV} and cluster ${CLUSTER_NAME}. Skipping"
           fi
-          echo "REPOS_FOUND=$REPOS_FOUND" >> $GITHUB_ENV
+#          echo "REPOS_FOUND=$REPOS_FOUND" >> $GITHUB_ENV
 
 
 #      - name: Validate kustomization resources
