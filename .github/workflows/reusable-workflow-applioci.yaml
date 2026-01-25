@@ -104,7 +104,7 @@ jobs:
             echo "x equals x"
             export REPOS_FOUND=true
                
-            for application in $applications_list
+            for application in "${applications_list}"
             do
               export APPLICATION_NAME=$(echo $application | jq -r '.name | sub("^cloudhandson-kube-"; "")')
               echo "########### Processing $APPLICATION_NAME"
