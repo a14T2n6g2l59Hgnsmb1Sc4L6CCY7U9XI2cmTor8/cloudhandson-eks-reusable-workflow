@@ -106,8 +106,8 @@ jobs:
                
             for application in "${applications_list}"
             do
-              export APPLICATION_NAME=$(echo $application | jq -r '.name | sub("^cloudhandson-kube-"; "")')
-              echo "########### Processing $APPLICATION_NAME"
+#              export APPLICATION_NAME=$(echo $application | jq -r '.name | sub("^cloudhandson-kube-"; "")')
+#              echo "########### Processing $APPLICATION_NAME"
             end
           else
             echo "x not equals x"
