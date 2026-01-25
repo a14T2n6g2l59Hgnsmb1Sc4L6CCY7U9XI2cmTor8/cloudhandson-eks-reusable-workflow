@@ -100,7 +100,7 @@ jobs:
           applications_list=$(gh repo list "$GH_ORG" --no-archived --limit 300 --json name,repositoryTopics | jq -c '.[] | (.repositoryTopics // []) as $topics | select(($topics | map(.name) | index("${{ env.CLUSTER_ENV }}") and index("cluster-${{ env.CLUSTER_NAME }}")))')
           echo "Applications list1 = $applications_list"
 
-          if [[ -n "$applications_list" ]]; then
+#          if [[ -n "$applications_list" ]]; then
 #            export REPOS_FOUND=true
 
 #            for application in $applications_list
@@ -140,10 +140,10 @@ jobs:
 
 #            cd resources-generated/${CLUSTER_ENV}/${CLUSTER_NAME}
 #            kustomize init --recursive --autodetect
-          else
+#          else
 #            export REPOS_FOUND=false
 #            echo "No repositories found for environment ${CLUSTER_ENV} and cluster ${CLUSTER_NAME}. Skipping"
-          fi
+#          fi
 #          echo "REPOS_FOUND=$REPOS_FOUND" >> $GITHUB_ENV
 
 
