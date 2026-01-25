@@ -273,21 +273,21 @@ jobs:
           # fi
 
 
-      - name: Compare generated vs deployed manifests
+#      - name: Compare generated vs deployed manifests
+#        if: env.REPOS_FOUND == 'true'
+#        run: |
+#          set -eu
+#          flux pull artifact oci://${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${AWS_ECR_REPOSITORY}:latest \
+#            --output deployed \
+#            --provider aws
+#          diff -u deployed/manifests.yaml generated/manifests.yaml | colordiff
+      
+      - name: Push
         if: env.REPOS_FOUND == 'true'
         run: |
-          set -eu
-          flux pull artifact oci://${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${AWS_ECR_REPOSITORY}:latest \
-            --output deployed \
-            --provider aws
-          diff -u deployed/manifests.yaml generated/manifests.yaml | colordiff
-      
-##       - name: Push
-#         if: env.REPOS_FOUND == 'true'
-#         run: |
-#           set -eu
-#           flux push artifact oci://${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${AWS_ECR_REPOSITORY}:latest \
-#           --path="./generated/" \
-#           --source="$(git config --get remote.origin.url)" \
-#           --revision="$(git tag --points-at HEAD)@sha1:$(git rev-parse HEAD)" \
-##          --provider aws
+         set -eu
+         flux push artifact oci://${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${AWS_ECR_REPOSITORY}:latest \
+          --path="./generated/" \
+          --source="$(git config --get remote.origin.url)" \
+          --revision="$(git tag --points-at HEAD)@sha1:$(git rev-parse HEAD)" \
+          --provider aws
