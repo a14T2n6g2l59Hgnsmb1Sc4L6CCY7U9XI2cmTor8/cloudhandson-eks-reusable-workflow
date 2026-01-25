@@ -1,4 +1,4 @@
-name: Tooling Reusable Workflow
+name: Generate Tools OCI
 
 on:
   workflow_call:
