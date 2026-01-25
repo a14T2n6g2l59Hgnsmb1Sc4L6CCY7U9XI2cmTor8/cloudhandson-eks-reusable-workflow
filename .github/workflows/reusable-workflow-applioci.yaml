@@ -87,7 +87,7 @@ jobs:
       - name: Pre-build
         shell: bash
         run: |
-#          set -euo pipefail
+          set -euo pipefail
           case ${CLUSTER_ENV} in
             prod)
               export DNS_SUBDOMAIN="cloudhandson"
