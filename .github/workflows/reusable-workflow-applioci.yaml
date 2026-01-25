@@ -106,6 +106,7 @@ jobs:
             for application in $applications_list
             do 
               echo "In loop"
+              export APPLICATION_NAME=$(echo $application | jq -r '.name | sub("^cloudhandson-kube-"; "")')
             end
           else
             echo "if condition false"
