@@ -241,46 +241,46 @@ jobs:
           kubeconform -summary -skip CustomResourceDefinition,Kustomization,OCIRepository,Gateway,SecretStore generated/
 
 
-#      - name: Login to Amazon ECR
-#        id: login-ecr
-#        if: env.REPOS_FOUND == 'true'
-#        uses: aws-actions/amazon-ecr-login@v2.0.1
-#        with:
-#          mask-password: 'true'
+      - name: Login to Amazon ECR
+        id: login-ecr
+        if: env.REPOS_FOUND == 'true'
+        uses: aws-actions/amazon-ecr-login@v2.0.1
+        with:
+          mask-password: 'true'
 
 
-#      - name: Login to Amazon ECR via docker
-#        if: env.REPOS_FOUND == 'true'
-#        run: |
-#          set -euo pipefail
-#          aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
+      - name: Login to Amazon ECR via docker
+        if: env.REPOS_FOUND == 'true'
+        run: |
+          set -euo pipefail
+          aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin "${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com"
 
 
-#      - name: Create ECR repository
-#        if: env.REPOS_FOUND == 'true'
-#        run: |
-#          set -eu
-#          aws ecr create-repository --repository-name ${AWS_ECR_REPOSITORY} --region ${{ env.AWS_REGION }} || true
-#
-#          # -------------------------------------------------------------------------------------------------------------------------------------------- #
-#          # NOTE MZE: Same as the previous ECR repo creation (see step 'pull tag and push to ECR' for more information)
-#          # -------------------------------------------------------------------------------------------------------------------------------------------- #
-#          # repo_exists=$(aws ecr describe-repositories --repository-name ${AWS_ECR_REPOSITORY} --region ${{ env.AWS_REGION }} 2> >(grep -v RepositoryNotFoundException 1>&2))
-#          # if [ $repo_exists=='' ]; then
-#          #   aws ecr create-repository --repository-name ${AWS_ECR_REPOSITORY} --region ${{ env.AWS_REGION }}
-#          # else
-#          #   echo 'Repository already exists'
-#          # fi
+      - name: Create ECR repository
+        if: env.REPOS_FOUND == 'true'
+        run: |
+          set -eu
+          aws ecr create-repository --repository-name ${AWS_ECR_REPOSITORY} --region ${{ env.AWS_REGION }} || true
+
+          # -------------------------------------------------------------------------------------------------------------------------------------------- #
+          # NOTE MZE: Same as the previous ECR repo creation (see step 'pull tag and push to ECR' for more information)
+          # -------------------------------------------------------------------------------------------------------------------------------------------- #
+          # repo_exists=$(aws ecr describe-repositories --repository-name ${AWS_ECR_REPOSITORY} --region ${{ env.AWS_REGION }} 2> >(grep -v RepositoryNotFoundException 1>&2))
+          # if [ $repo_exists=='' ]; then
+          #   aws ecr create-repository --repository-name ${AWS_ECR_REPOSITORY} --region ${{ env.AWS_REGION }}
+          # else
+          #   echo 'Repository already exists'
+          # fi
 
 
-#      - name: Compare generated vs deployed manifests
-#        if: env.REPOS_FOUND == 'true'
-#        run: |
-#          set -eu
-#          flux pull artifact oci://${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${AWS_ECR_REPOSITORY}:latest \
-#            --output deployed \
-#            --provider aws
-#          diff -u deployed/manifests.yaml generated/manifests.yaml | colordiff
+      - name: Compare generated vs deployed manifests
+        if: env.REPOS_FOUND == 'true'
+        run: |
+          set -eu
+          flux pull artifact oci://${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${AWS_ECR_REPOSITORY}:latest \
+            --output deployed \
+            --provider aws
+          diff -u deployed/manifests.yaml generated/manifests.yaml | colordiff
       
 ##       - name: Push
 #         if: env.REPOS_FOUND == 'true'
