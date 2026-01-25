@@ -99,12 +99,8 @@ jobs:
 
 #          applications_list=$(gh repo list "$GH_ORG" --no-archived --limit 300 --json name,repositoryTopics | jq -c '.[] | (.repositoryTopics // []) as $topics | select(($topics | map(.name) | index("${{ env.CLUSTER_ENV }}") and index("cluster-${{ env.CLUSTER_NAME }}")))')
 
-          applications_list=$(gh repo list "$GH_ORG" --no-archived --limit 300 --json name,repositoryTopics \ 
-               | jq -r '.[] | (.repositoryTopics // [] | map(.name)) as $topics \
-               | select(($topics | index("dev")) and ($topics | index("cluster-mpft"))) \
-               | .name')
+          applications_list=$(gh repo list "$GH_ORG" --no-archived --limit 300 --json name,repositoryTopics | jq -r '.[] | (.repositoryTopics // [] | map(.name)) as $topics | select(($topics | index("dev")) and ($topics | index("cluster-mpft"))) | .name')
      
-          
           echo "Applications list1 = $applications_list"
 
           if [[ -n $applications_list ]]; then
