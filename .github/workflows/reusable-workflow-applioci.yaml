@@ -179,29 +179,29 @@ jobs:
 #          echo "REPOS_FOUND=$REPOS_FOUND" >> $GITHUB_ENV
 
 
-#      - name: Validate kustomization resources
-#        if: env.REPOS_FOUND == 'true'
-#        run: |
-#          set -eu
-#          echo "validating kustomization.yaml resources..."
-#          cd resources-generated/${CLUSTER_ENV}/${CLUSTER_NAME}
-#          mapfile -t yaml_files < <(find . -type f -name "*.yaml" ! -name "kustomization.yaml" -print | sed 's|^\./||')
-#          mapfile -t kustomize_resources < <(yq -r '.resources[]?' kustomization.yaml)
-#
-#          missing=false
-#          for file in "${yaml_files[@]}"; do
-#          if [[ ! " ${kustomize_resources[*]} " =~ " $file " ]]; then
-#            echo "ERROR: $file is not referenced in kustomization.yaml"
-#            missing=true
-#          fi
-#          done
-#
-#          if [[ $missing == true ]]; then
-#            echo "One or more YAML files are missing from kustomization.yaml"
-#            exit 1
-#          fi
-#
-#          echo "All YAML files are correctly referenced"
+      - name: Validate kustomization resources
+        if: env.REPOS_FOUND == 'true'
+        run: |
+          set -eu
+          echo "validating kustomization.yaml resources..."
+          cd resources-generated/${CLUSTER_ENV}/${CLUSTER_NAME}
+          mapfile -t yaml_files < <(find . -type f -name "*.yaml" ! -name "kustomization.yaml" -print | sed 's|^\./||')
+          mapfile -t kustomize_resources < <(yq -r '.resources[]?' kustomization.yaml)
+
+          missing=false
+          for file in "${yaml_files[@]}"; do
+          if [[ ! " ${kustomize_resources[*]} " =~ " $file " ]]; then
+            echo "ERROR: $file is not referenced in kustomization.yaml"
+            missing=true
+          fi
+          done
+
+          if [[ $missing == true ]]; then
+            echo "One or more YAML files are missing from kustomization.yaml"
+            exit 1
+          fi
+
+          echo "All YAML files are correctly referenced"
 
 
 #      - name: Generate kustomization.yaml from template
