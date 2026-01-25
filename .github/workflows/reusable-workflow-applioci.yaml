@@ -109,33 +109,19 @@ jobs:
               export APPLICATION_NAME=$(echo $application | jq -r '.name | sub("^cloudhandson-kube-mpft-"; "")')
               echo "########### Processing $APPLICATION_NAME"
               export APPLICATION_NAMESPACE=$APPLICATION_NAME
-###              export SPLUNK_EFS_ID=$(aws efs describe-file-systems --query "FileSystems[?Name == 'eks-$CLUSTER_NAME-$CLUSTER_ENV-splunk-efs'].[FileSystemId]" --output text)
-##              export SPLUNK_ACCESS_POINT_ID=$(aws efs describe-access-points --query "AccessPoints[?Name == '$APPLICATION_NAMESPACE-splunk-access-point' && FileSystemId == '$SPLUNK_EFS_ID'].AccessPointId" --output text)
-##              export DATA_EFS_ID=$(aws efs describe-file-systems --query "FileSystems[?Name == 'eks-$CLUSTER_NAME-$CLUSTER_ENV-data-efs'].[FileSystemId]" --output text)
-###              export DATA_ACCESS_POINT_ID=$(aws efs describe-access-points --query "AccessPoints[?Name == '$APPLICATION_NAMESPACE-data-access-point' && FileSystemId == '$DATA_EFS_ID'].AccessPointId" --output text)
+          
               mkdir -p resources-generated/$CLUSTER_ENV/$CLUSTER_NAME/$APPLICATION_NAMESPACE/$APPLICATION_NAME
 
               cat bin/generate/templates/ks.yaml | envsubst '${APPLICATION_NAME},${APPLICATION_NAMESPACE}' | yq '. *=load("bin/generate/templates/ks_app.yaml")' - > resources-generated/$CLUSTER_ENV/$CLUSTER_NAME/$APPLICATION_NAMESPACE/$APPLICATION_NAME/ks.yaml
               cat bin/generate/templates/ocirepo.yaml | envsubst '${APPLICATION_NAME},${APPLICATION_NAMESPACE}' > resources-generated/$CLUSTER_ENV/$CLUSTER_NAME/$APPLICATION_NAMESPACE/$APPLICATION_NAME/ocirepo.yaml
 
               cat bin/generate/templates/namespace.yaml | envsubst '${APPLICATION_NAME},${APPLICATION_NAMESPACE}' > resources-generated/$CLUSTER_ENV/$CLUSTER_NAME/$APPLICATION_NAMESPACE/namespace.yaml
-#              cat bin/generate/templates/gw.yaml | envsubst '${APPLICATION_NAME},${APPLICATION_NAMESPACE},${CLUSTER_NAME},${CLUSTER_ENV},${DNS_SUBDOMAIN}' > resources-generated/$CLUSTER_ENV/$CLUSTER_NAME/$APPLICATION_NAMESPACE/$APPLICATION_NAME/gw.yaml
               cat bin/generate/templates/secretstore.yaml | envsubst '${APPLICATION_NAME},${APPLICATION_NAMESPACE}' > resources-generated/$CLUSTER_ENV/$CLUSTER_NAME/$APPLICATION_NAMESPACE/$APPLICATION_NAME/secretstore.yaml
               cat bin/generate/templates/serviceaccount.yaml | envsubst '${APPLICATION_NAME},${APPLICATION_NAMESPACE},${account_id},${CLUSTER_ENV},${CLUSTER_NAME}' > resources-generated/$CLUSTER_ENV/$CLUSTER_NAME/$APPLICATION_NAMESPACE/$APPLICATION_NAME/serviceaccount.yaml
-###              cat bin/generate/templates/persistentvolume.yaml | envsubst '${APPLICATION_NAMESPACE},${SPLUNK_EFS_ID},${SPLUNK_ACCESS_POINT_ID},${DATA_EFS_ID},${DATA_ACCESS_POINT_ID}' > resources-generated/$CLUSTER_ENV/$CLUSTER_NAME/$APPLICATION_NAMESPACE/$APPLICATION_NAME/persistentvolume.yaml
-###              cat bin/generate/templates/persistentvolumeclaim.yaml | envsubst '${APPLICATION_NAMESPACE},${APPLICATION_NAME}' > resources-generated/$CLUSTER_ENV/$CLUSTER_NAME/$APPLICATION_NAMESPACE/$APPLICATION_NAME/persistentvolumeclaim.yaml
-
               cat bin/generate/templates/notificationprovider.yaml | envsubst '${APPLICATION_NAME}' > resources-generated/$CLUSTER_ENV/$CLUSTER_NAME/$APPLICATION_NAMESPACE/$APPLICATION_NAME/notificationprovider.yaml
               cat bin/generate/templates/notificationalert.yaml | envsubst '${APPLICATION_NAME}' > resources-generated/$CLUSTER_ENV/$CLUSTER_NAME/$APPLICATION_NAMESPACE/$APPLICATION_NAME/notificationalert.yaml
-#
-###              export EFS_SHARED_NAME=`gh repo view a14T2n6g2l59Hgnsmb1Sc4L6CCY7U9XI2cmTor8/cloudhandson-kube-${APPLICATION_NAME} --json repositoryTopics | jq -r '.repositoryTopics[] | select( .name | contains("efs-shared-")) | .name' | sed "s/efs-shared-//"`
-##              if [ -n "${EFS_SHARED_NAME}" ]; then
-##                  export EFS_PERIMETER_ACCESS_POINT_ID=$(aws efs describe-access-points --query "AccessPoints[?Name == 'shared-${EFS_SHARED_NAME}-global-access-point' && FileSystemId == '$DATA_EFS_ID'].AccessPointId" --output text)
-##                  cat bin/generate/templates/shared_pv_pvc.yaml | envsubst '${APPLICATION_NAMESPACE},${EFS_SHARED_NAME},${DATA_EFS_ID},${EFS_PERIMETER_ACCESS_POINT_ID}' > resources-generated/${CLUSTER_ENV}/${CLUSTER_NAME}/$APPLICATION_NAMESPACE/$APPLICATION_NAME/shared_pv_pvc.yaml
-###              fi
-
-              echo "########### End for $APPLICATION_NAME"          
-
+          
+              echo "########### End for $APPLICATION_NAME"
             done
           else
             echo "if condition false"
