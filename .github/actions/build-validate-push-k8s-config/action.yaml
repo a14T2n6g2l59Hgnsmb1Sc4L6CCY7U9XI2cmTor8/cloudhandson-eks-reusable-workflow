@@ -60,7 +60,7 @@ runs:
         IMAGE_TAG: ${{ inputs.IMAGE_SHA }}
         DNS_SUBDOMAIN: ${{ inputs.DNS_SUBDOMAIN }}
         GH_TOKEN: ${{ secrets.GIT_TOKEN_PERSONAL }}
-        GH_HOSTNAME: ${{ secrets.GIT_TOKEN_PERSONAL }}
+        GH_HOSTNAME: ${{ inputs.GIT_TOKEN_PERSONAL }}
       shell: bash
       run: |
         set -feu
