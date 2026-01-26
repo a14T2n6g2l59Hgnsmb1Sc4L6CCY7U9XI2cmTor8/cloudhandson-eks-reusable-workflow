@@ -129,14 +129,14 @@ jobs:
 
 
       #### Deployment of configuration in dev, uat, qa or prod
-#      - name: Build, validate and push K8s configuration in (${{ inputs.APPLICATION_ENV }})
-#        uses: a14T2n6g2l59Hgnsmb1Sc4L6CCY7U9XI2cmTor8/cloudhandson-eks-reusable-workflow/.github/actions/build-validate-push-k8s-config@master
-#        with:
-#          CLUSTER_ENV: ${{ inputs.APPLICATION_ENV }}
-#          CLUSTER_NAME: ${{ inputs.CLUSTER_NAME }}
-#          APPLICATION: ${{ env.APPLICATION }}
-#          APPLICATION_NAMESPACE: ${{ env.APPLICATION_NAMESPACE }}
-#          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-#          IMAGE_TAG: ${{ env.IMAGE_SHA }}
-#          DNS_SUBDOMAIN: ${{ vars.DNS_SUBDOMAIN }}
-#          GH_TOKEN: ${{ secrets.GIT_TOKEN_PERSONAL }}
+      - name: Build, validate and push K8s configuration in (${{ inputs.APPLICATION_ENV }})
+        uses: a14T2n6g2l59Hgnsmb1Sc4L6CCY7U9XI2cmTor8/cloudhandson-eks-reusable-workflow/.github/actions/build-validate-push-k8s-config@workflow_test
+        with:
+          CLUSTER_ENV: ${{ inputs.APPLICATION_ENV }}
+          CLUSTER_NAME: ${{ inputs.CLUSTER_NAME }}
+          APPLICATION: ${{ env.APPLICATION }}
+          APPLICATION_NAMESPACE: ${{ env.APPLICATION_NAMESPACE }}
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ env.IMAGE_SHA }}
+          DNS_SUBDOMAIN: ${{ vars.DNS_SUBDOMAIN }}
+          GH_TOKEN: ${{ secrets.GIT_TOKEN_PERSONAL }}
