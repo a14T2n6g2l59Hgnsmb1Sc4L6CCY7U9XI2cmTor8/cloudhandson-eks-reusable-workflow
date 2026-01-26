@@ -59,8 +59,8 @@ runs:
         APPLICATION_NAMESPACE: ${{ inputs.APPLICATION_NAMESPACE }}
         IMAGE_TAG: ${{ inputs.IMAGE_SHA }}
         DNS_SUBDOMAIN: ${{ inputs.DNS_SUBDOMAIN }}
-        GH_TOKEN: ${{ secrets.GIT_PRIVATE_TOKEN }}
-        GH_HOSTNAME: ${{ secrets.GIT_PRIVATE_TOKEN }}
+        GH_TOKEN: ${{ secrets.GIT_TOKEN_PERSONAL }}
+        GH_HOSTNAME: ${{ secrets.GIT_TOKEN_PERSONAL }}
       shell: bash
       run: |
         set -feu

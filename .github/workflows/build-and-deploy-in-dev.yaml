@@ -48,8 +48,10 @@ jobs:
         shell: bash
         run: |
           echo "AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)" >> $GITHUB_ENV
-          APPLICATION_NAME="s3-connection"
-          APPLICATION_NAME="${APPLICATION_NAME,,}"
+          
+          APPLICATION_NAME=$(echo "${{ github.repository }}" | sed 's|.*/cloudhandson-kube-${{ inputs.CLUSTER_NAME }}||')
+
+#          APPLICATION_NAME="${APPLICATION_NAME,,}"
           echo "APPLICATION_NAME=$APPLICATION_NAME" >> $GITHUB_ENV
           echo "APPLICATION_NAME=$APPLICATION_NAME"
           
@@ -138,4 +140,4 @@ jobs:
 #          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
 #          IMAGE_TAG: ${{ env.IMAGE_SHA }}
 #          DNS_SUBDOMAIN: ${{ vars.DNS_SUBDOMAIN }}
-#          GH_TOKEN: ${{ secrets.GIT_PRIVATE_TOKEN }}
+#          GH_TOKEN: ${{ secrets.GIT_TOKEN_PERSONAL }}
