@@ -134,9 +134,9 @@ jobs:
         with:
           CLUSTER_ENV: ${{ inputs.APPLICATION_ENV }}
           CLUSTER_NAME: ${{ inputs.CLUSTER_NAME }}
-          APPLICATION: ${{ env.APPLICATION }}
+          APPLICATION_NAME: ${{ env.APPLICATION_NAME }}
           APPLICATION_NAMESPACE: ${{ env.APPLICATION_NAMESPACE }}
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: ${{ env.IMAGE_SHA }}
-          DNS_SUBDOMAIN: ${{ vars.DNS_SUBDOMAIN }}
+#          DNS_SUBDOMAIN: ${{ vars.DNS_SUBDOMAIN }}
           GH_TOKEN: ${{ secrets.GIT_TOKEN_PERSONAL }}
