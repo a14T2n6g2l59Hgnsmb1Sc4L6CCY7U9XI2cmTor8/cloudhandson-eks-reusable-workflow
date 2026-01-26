@@ -72,7 +72,7 @@ runs:
         mv kustomization.tpl.yaml kustomization.yaml
         
         ## Shared EFS
-        echo "$GH_TOKEN" | gh auth login --hostname "$GH_HOSTNAME" --with-token
+        echo "${{ env.GH_TOKEN }}" | gh auth login --hostname ${{ env.GH_HOSTNAME }} --with-token
         export EFS_SHARED_NAME=$(gh repo view a14T2n6g2l59Hgnsmb1Sc4L6CCY7U9XI2cmTor8/cloudhandson-kube-${APPLICATION_NAME} --json repositoryTopics | \
         jq -r '.repositoryTopics[] | select( .name | contains("efs-shared-")) | .name' | sed "s/efs-shared-//")
         
