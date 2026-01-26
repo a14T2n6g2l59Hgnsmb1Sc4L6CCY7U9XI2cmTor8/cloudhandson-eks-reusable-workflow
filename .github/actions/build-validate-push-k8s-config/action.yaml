@@ -26,6 +26,7 @@ inputs:
     default: "ap-south-1"
   GH_TOKEN:
     description: "Github Token"
+    required: true
   GH_HOSTNAME:
     description: "Github Organization"
     default: github.com
@@ -60,7 +61,7 @@ runs:
         IMAGE_TAG: ${{ inputs.IMAGE_SHA }}
         DNS_SUBDOMAIN: ${{ inputs.DNS_SUBDOMAIN }}
         GH_TOKEN: ${{ secrets.GIT_TOKEN_PERSONAL }}
-        GH_HOSTNAME: ${{ inputs.GIT_TOKEN_PERSONAL }}
+        GH_HOSTNAME: ${{ inputs.GH_HOSTNAME }}
       shell: bash
       run: |
         set -feu
