@@ -52,6 +52,22 @@ runs:
         echo "Cleaning of Local repository completed successfully"
 
 
+    - name: Authenticate GitHub CLI
+      shell: bash
+      run: |
+        set -euo pipefail
+        gh config set git_protocol ssh
+        echo "$GIT_TOKEN_PERSONAL" | gh auth login --hostname "$GH_HOSTNAME" --with-token
+        if gh auth status >/dev/null 2>&1; then
+            echo "Github CLI authenticated successfully"
+        else
+            echo "Github CLI authentication failed"
+            exit 1
+        fi
+      env:
+        GIT_TOKEN_PERSONAL: ${{ inputs.GH_TOKEN }}
+
+
     - name: Generate Config files with Kustomize
       env:
         CLUSTER_ENV: ${{ inputs.CLUSTER_ENV }}
@@ -73,7 +89,7 @@ runs:
         mv kustomization.tpl.yaml kustomization.yaml
         
         ## Shared EFS
-        echo "${{ env.GH_TOKEN }}" | gh auth login --hostname ${{ env.GH_HOSTNAME }} --with-token
+        ## echo "${{ env.GH_TOKEN }}" | gh auth login --hostname ${{ env.GH_HOSTNAME }} --with-token
         export EFS_SHARED_NAME=$(gh repo view a14T2n6g2l59Hgnsmb1Sc4L6CCY7U9XI2cmTor8/cloudhandson-kube-${APPLICATION_NAME} --json repositoryTopics | \
         jq -r '.repositoryTopics[] | select( .name | contains("efs-shared-")) | .name' | sed "s/efs-shared-//")
         
