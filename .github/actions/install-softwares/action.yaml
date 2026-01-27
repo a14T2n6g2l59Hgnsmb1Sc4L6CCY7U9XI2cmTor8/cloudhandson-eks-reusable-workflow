@@ -5,6 +5,7 @@ runs:
   using: "composite"
   steps:
     - name: Install Softwares
+      shell: bash
       run: |
         sudo apt-get update
         sudo apt-get install -y colordiff
