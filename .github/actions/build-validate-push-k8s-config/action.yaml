@@ -136,14 +136,15 @@ runs:
     - name: Create ECR repository
       shell: bash
       run: |
-        ECR_CONFIG_REPOSITORY="eks/config/${{ inputs.APPLICATION_ENV }}/${{ inputs.CLUSTER_NAME }}/${{ inputs.APPLICATION_NAMESPACE}}/${{ inputs.APPLICATION_NAME }}"
+        set -feux
+        ECR_CONFIG_REPOSITORY="eks/config/${{ inputs.CLUSTER_ENV }}/${{ inputs.CLUSTER_NAME }}/${{ inputs.APPLICATION_NAMESPACE }}/${{ inputs.APPLICATION_NAME }}"
         aws ecr describe-repositories --repository-names ${ECR_CONFIG_REPOSITORY} || \
-        aws ecr create-repository --repository-name ${ECR_CONFIG_REPOSITORY} --region ${{ vars.AWS_REGION }}
+        aws ecr create-repository --repository-name ${ECR_CONFIG_REPOSITORY} --region ${{ inputs.AWS_REGION }}
 
 
     - name: Pull Old Image and Check difference with colordiff
       env:
-        CONFIG_IMAGE_NAME: ${{ inputs.ECR_REGISTRY }}/eks/config/${{ inputs.APPLICATION_ENV }}/${{ inputs.CLUSTER_NAME }}/${{ inputs.APPLICATION_NAMESPACE}}/${{ inputs.APPLICATION_NAME }}
+        CONFIG_IMAGE_NAME: ${{ inputs.ECR_REGISTRY }}/eks/config/${{ inputs.CLUSTER_ENV }}/${{ inputs.CLUSTER_NAME }}/${{ inputs.APPLICATION_NAMESPACE }}/${{ inputs.APPLICATION_NAME }}
       continue-on-error: true
       shell: bash
       run: |
