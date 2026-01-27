@@ -167,13 +167,13 @@ runs:
         CONFIG_IMAGE_NAME: ${{ inputs.ECR_REGISTRY }}/eks/config/${{ inputs.APPLICATION_ENV }}/${{ inputs.CLUSTER_NAME }}/${{ inputs.APPLICATION_NAMESPACE}}/${{ inputs.APPLICATION_NAME }}
       shell: bash
       run: |
-        set -feu
+        set -feux
         
         echo "Starting step: Push new image"
         flux push artifact oci://$CONFIG_IMAGE_NAME:latest \
           --path="./generated/" \
           --source="$(git config --get remote.origin.url)" \
-          --revision="$(git tag --points-at HEAD)@sha1:$(git rev-parse HEAD)" |
+          --revision="$(git tag --points-at HEAD)@sha1:$(git rev-parse HEAD)" \
           --provider aws
         
         echo "New Configuration Image completed successfully"
