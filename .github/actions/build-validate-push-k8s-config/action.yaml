@@ -112,7 +112,7 @@ runs:
         fi
         
         kustomize build --enable-helm . || exit 1
-        kustomize build --enable-helm . | envsubstr '${CLUSTER_ENV},${CLUSTER_NAME},${APPLICATION},${APPLICATION_NAMESPACE},${AWS_REGION},${IMAGE_TAG}' > generated/manifests.yaml
+        kustomize build --enable-helm . | envsubst '${CLUSTER_ENV},${CLUSTER_NAME},${APPLICATION},${APPLICATION_NAMESPACE},${AWS_REGION},${IMAGE_TAG}' > generated/manifests.yaml
         
         echo $?
         echo "==============================================================================================="
