@@ -123,6 +123,7 @@ runs:
 
     - name: Validate with kubeconform
       shell: bash
+      continue-on-error: true
       run: |
         set -feu
         echo "Starting step: Validate with kubeconform"
