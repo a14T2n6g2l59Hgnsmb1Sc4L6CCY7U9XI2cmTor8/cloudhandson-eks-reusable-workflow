@@ -126,7 +126,7 @@ runs:
       run: |
         set -feu
         echo "Starting step: Validate with kubeconform"
-        kubeconfirm -summary -schema-location default -schema-location \
+        kubeconform -summary -schema-location default -schema-location \
         'https://raw.githubusercontent.com/datreeio/CRDs-catalog/main/{{.Group}}/{{.ResourceKind}}__{{.ResourceAPIVersion}}.json' \
         -skip CustomResourceDefinition generated/
         echo "Validation with kubeconform completed successfully"

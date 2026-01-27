@@ -21,6 +21,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Install Softwares
+        uses: a14T2n6g2l59Hgnsmb1Sc4L6CCY7U9XI2cmTor8/cloudhandson-eks-reusable-workflow/.github/actions/install-softwares@workflow_test
+
+
       - name: Checkout Repository
         uses: actions/checkout@v6
 
