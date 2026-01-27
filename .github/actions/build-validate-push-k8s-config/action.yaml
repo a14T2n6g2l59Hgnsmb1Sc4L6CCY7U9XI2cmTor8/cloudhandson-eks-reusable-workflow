@@ -164,7 +164,7 @@ runs:
 
     - name: Push new image
       env:
-        CONFIG_IMAGE_NAME: ${{ inputs.ECR_REGISTRY }}/eks/config/${{ inputs.APPLICATION_ENV }}/${{ inputs.CLUSTER_NAME }}/${{ inputs.APPLICATION_NAMESPACE}}/${{ inputs.APPLICATION_NAME }}
+        CONFIG_IMAGE_NAME: ${{ inputs.ECR_REGISTRY }}/eks/config/${{ inputs.CLUSTER_ENV }}/${{ inputs.CLUSTER_NAME }}/${{ inputs.APPLICATION_NAMESPACE }}/${{ inputs.APPLICATION_NAME }}
       shell: bash
       run: |
         set -feux
