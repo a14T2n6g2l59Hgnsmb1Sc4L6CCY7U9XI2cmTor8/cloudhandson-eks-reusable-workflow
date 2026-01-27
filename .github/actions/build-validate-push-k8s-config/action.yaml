@@ -73,7 +73,7 @@ runs:
       env:
         CLUSTER_ENV: ${{ inputs.CLUSTER_ENV }}
         CLUSTER_NAME: ${{ inputs.CLUSTER_NAME }}
-        APPLICATION: ${{ inputs.APPLICATION }}
+        APPLICATION_NAME: ${{ inputs.APPLICATION_NAME }}
         APPLICATION_NAMESPACE: ${{ inputs.APPLICATION_NAMESPACE }}
         IMAGE_TAG: ${{ inputs.IMAGE_SHA }}
         DNS_SUBDOMAIN: ${{ inputs.DNS_SUBDOMAIN }}
@@ -112,7 +112,7 @@ runs:
         fi
         
         kustomize build --enable-helm . || exit 1
-        kustomize build --enable-helm . | envsubst '${CLUSTER_ENV},${CLUSTER_NAME},${APPLICATION},${APPLICATION_NAMESPACE},${AWS_REGION},${IMAGE_TAG}' > generated/manifests.yaml
+        kustomize build --enable-helm . | envsubst '${CLUSTER_ENV},${CLUSTER_NAME},${APPLICATION_NAME},${APPLICATION_NAMESPACE},${AWS_REGION},${IMAGE_TAG}' > generated/manifests.yaml
         
         echo $?
         echo "==============================================================================================="
