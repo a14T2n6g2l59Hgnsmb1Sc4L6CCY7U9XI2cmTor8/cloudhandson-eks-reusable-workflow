@@ -57,7 +57,7 @@ runs:
       run: |
         set -xeuo pipefail
         gh config set git_protocol ssh
-        echo "$GIT_TOKEN_PERSONAL" | gh auth login --hostname "GH_HOSTNAME" --with-token
+        echo "$GIT_TOKEN_PERSONAL" | gh auth login --hostname ${{ inputs.GH_HOSTNAME }} --with-token
         if gh auth status >/dev/null 2>&1; then
             echo "Github CLI authenticated successfully"
         else
