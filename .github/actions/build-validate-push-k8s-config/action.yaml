@@ -55,9 +55,9 @@ runs:
     - name: Authenticate GitHub CLI
       shell: bash
       run: |
-        set -euo pipefail
+        set -xeuo pipefail
         gh config set git_protocol ssh
-        echo "$GIT_TOKEN_PERSONAL" | gh auth login --hostname "$GH_HOSTNAME" --with-token
+        echo "$GIT_TOKEN_PERSONAL" | gh auth login --hostname "GH_HOSTNAME" --with-token
         if gh auth status >/dev/null 2>&1; then
             echo "Github CLI authenticated successfully"
         else
@@ -66,6 +66,7 @@ runs:
         fi
       env:
         GIT_TOKEN_PERSONAL: ${{ inputs.GH_TOKEN }}
+        GH_HOSTNAME: ${{ inputs.GH_HOSTNAME }}
 
 
     - name: Generate Config files with Kustomize
