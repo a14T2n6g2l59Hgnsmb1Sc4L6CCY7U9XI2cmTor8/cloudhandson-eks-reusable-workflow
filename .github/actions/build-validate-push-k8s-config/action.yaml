@@ -114,6 +114,8 @@ runs:
         kustomize build --enable-helm . || exit 1
         kustomize build --enable-helm . | envsubst '${CLUSTER_ENV},${CLUSTER_NAME},${APPLICATION_NAME},${APPLICATION_NAMESPACE},${AWS_REGION},${IMAGE_TAG}' > generated/manifests.yaml
         
+        cat generated/manifests.yaml
+        
         echo $?
         echo "==============================================================================================="
         echo "This is Configuration File generation step =============> Should display 1 if there is an error"
