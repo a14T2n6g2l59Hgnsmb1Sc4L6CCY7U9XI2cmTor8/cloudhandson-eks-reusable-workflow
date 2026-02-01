@@ -1,0 +1,102 @@
+name: Reusable Terraform Bootstrap
+
+on:
+  workflow_call:
+    inputs:
+      CLUSTER_NAME:
+        type: string
+        required: true
+      AWS_REGION:
+        type: string
+        default: "ap-south-1"
+      GITHUB_REPOSITORY:
+        type: string
+        default: ${{ github.repository }}
+      CLUSTER_ENV:
+        type: string
+        default: "lab"
+
+    secrets:
+      AWS_ROLE_ARN:
+        required: true
+      GIT_TOKEN_PERSONAL:
+        required: true
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  terraform:
+    runs-on: "ubuntu-latest"
+
+    env:
+      GIT_TOKEN_PERSONAL: ${{ secrets.GIT_TOKEN_PERSONAL }}
+      GH_HOSTNAME: github.com
+      GH_ORG: a14T2n6g2l59Hgnsmb1Sc4L6CCY7U9XI2cmTor8
+      CLUSTER_ENV: ${{ inputs.CLUSTER_ENV }}
+      CLUSTER_NAME: ${{ inputs.CLUSTER_NAME }}
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v6
+
+      - name: Authenticate GitHub CLI
+        run: |
+          set -efoux pipefail
+          gh config set git_protocol ssh
+          echo "$GIT_TOKEN_PERSONAL" | gh auth login --hostname "$GH_HOSTNAME" --with-token
+          if gh auth status >/dev/null 2>&1; then
+            echo "Github CLI authenticated successfully"
+          else
+            echo "Github CLI authentication failed"
+            exit 1
+          fi
+
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v5.1.1
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ inputs.AWS_REGION }}
+
+
+      - name: Define AWS_ENV
+        run: |
+          set -efoux pipefail
+          if [ "$CLUSTER_ENV" = "lab" ]; then
+            echo "AWS_ENV=lab" >> $GITHUB_ENV
+          elif [ "$CLUSTER_ENV" = "prod" ]; then
+            echo "AWS_ENV=prod" >> $GITHUB_ENV
+          else
+            echo "AWS_ENV=noprod" >> $GITHUB_ENV
+          fi
+
+
+      - name: Get list of applications
+        id: list_apps
+        run: |
+          set -efoux pipefail
+          #repoList=$(gh repo list "$GH_ORG" --no-archived --limit 300 --topic="${{ env.CLUSTER_ENV }},${{ env.CLUSTER_NAME }}" --json name | jq -r '.[].name' | sed 's/^cloudhandson-kube-//')
+#          allRepos=$(gh repo list "$GH_ORG" --no-archived --limit 300 --json name,repositoryTopics | jq -r '.[] | (.repositoryTopics // []) as $topics | select(($topics | map(.name) | index("${{ env.CLUSTER_ENV }}") and index("${{ env.CLUSTER_NAME }}"))) | .name | sub("^cloudhandson-kube-"; "")' | tr '\n' ' ')
+          allRepos=$(gh repo list "$GH_ORG" --no-archived --limit 300 --json name,repositoryTopics | jq -c '.[] | (.repositoryTopics // []) as $topics | select(($topics | map(.name) | index("${{ env.CLUSTER_ENV }}") and index("cluster-${{ env.CLUSTER_NAME }}")))')
+               
+          echo "REPO_LIST=$allRepos" >> $GITHUB_ENV
+          echo "Applications: $allRepos"
+
+
+      - name: Run Terraform plan/apply per app
+        run: |
+          set -efoux pipefail
+          for app in $REPO_LIST; do
+            echo "Processing $app"
+            export APPLICATION_NAME=$app
+            export NAMESPACE=$app
+            rm -rf .terraform .terraform.lock.hcl
+            # Generating main.tf
+            cat bin/main.tf | envsubst '${CLUSTER_ENV},${AWS_ENV},${CLUSTER_NAME},${NAMESPACE},${APPLICATION_NAME}' > main.tf
+            terraform init -reconfigure
+            #terraform plan
+            terraform apply -auto-approve
+            rm -f main.tf
+          done

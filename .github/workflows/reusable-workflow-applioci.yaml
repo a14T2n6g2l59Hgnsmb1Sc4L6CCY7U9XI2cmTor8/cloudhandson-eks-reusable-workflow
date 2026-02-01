@@ -65,7 +65,7 @@ jobs:
 
       - name: Authenticate GitHub CLI
         run: |
-          set -euo pipefail
+          set -efoux pipefail
           gh config set git_protocol ssh
           echo "$GIT_TOKEN_PERSONAL" | gh auth login --hostname "$GH_HOSTNAME" --with-token
           if gh auth status >/dev/null 2>&1; then
