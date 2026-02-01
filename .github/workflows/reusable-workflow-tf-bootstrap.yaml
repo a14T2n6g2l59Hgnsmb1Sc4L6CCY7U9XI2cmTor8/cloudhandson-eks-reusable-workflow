@@ -75,14 +75,15 @@ jobs:
 
       - name: Get list of applications
         id: list_apps
+        shell: bash
         run: |
           set -efoux pipefail
           #repoList=$(gh repo list "$GH_ORG" --no-archived --limit 300 --topic="${{ env.CLUSTER_ENV }},${{ env.CLUSTER_NAME }}" --json name | jq -r '.[].name' | sed 's/^cloudhandson-kube-//')
-#          allRepos=$(gh repo list "$GH_ORG" --no-archived --limit 300 --json name,repositoryTopics | jq -r '.[] | (.repositoryTopics // []) as $topics | select(($topics | map(.name) | index("${{ env.CLUSTER_ENV }}") and index("${{ env.CLUSTER_NAME }}"))) | .name | sub("^cloudhandson-kube-"; "")' | tr '\n' ' ')
+          #allRepos=$(gh repo list "$GH_ORG" --no-archived --limit 300 --json name,repositoryTopics | jq -r '.[] | (.repositoryTopics // []) as $topics | select(($topics | map(.name) | index("${{ env.CLUSTER_ENV }}") and index("${{ env.CLUSTER_NAME }}"))) | .name | sub("^cloudhandson-kube-"; "")' | tr '\n' ' ')
           allRepos=$(gh repo list "$GH_ORG" --no-archived --limit 300 --json name,repositoryTopics | jq -c '.[] | (.repositoryTopics // []) as $topics | select(($topics | map(.name) | index("${{ env.CLUSTER_ENV }}") and index("cluster-${{ env.CLUSTER_NAME }}")))')
                
           echo "REPO_LIST=$allRepos" >> $GITHUB_ENV
-          echo "Applications: $allRepos"
+          echo "Applications_list: $allRepos"               
 
 
       - name: Run Terraform plan/apply per app
