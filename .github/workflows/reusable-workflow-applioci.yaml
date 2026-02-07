@@ -103,7 +103,7 @@ jobs:
       - name: Pre-build
         shell: bash
         run: |
-          set -euo pipefail
+          set -feuox pipefail
           case ${CLUSTER_ENV} in
             prod)
               export DNS_SUBDOMAIN="cloudhandson"
@@ -210,7 +210,7 @@ jobs:
       - name: Validate kustomization resources
         if: env.REPOS_FOUND == 'true'
         run: |
-          set -eu
+          set -feoux
           echo "validating kustomization.yaml resources..."
           cd resources-generated/${CLUSTER_ENV}/${CLUSTER_NAME}
           mapfile -t yaml_files < <(find . -type f -name "*.yaml" ! -name "kustomization.yaml" -print | sed 's|^\./||')
