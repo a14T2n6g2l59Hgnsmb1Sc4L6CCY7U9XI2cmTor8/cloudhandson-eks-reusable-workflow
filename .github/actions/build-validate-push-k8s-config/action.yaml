@@ -75,7 +75,7 @@ runs:
         CLUSTER_NAME: ${{ inputs.CLUSTER_NAME }}
         APPLICATION_NAME: ${{ inputs.APPLICATION_NAME }}
         APPLICATION_NAMESPACE: ${{ inputs.APPLICATION_NAMESPACE }}
-        IMAGE_TAG: ${{ inputs.IMAGE_SHA }}
+        IMAGE_TAG: ${{ inputs.IMAGE_TAG }}
         DNS_SUBDOMAIN: ${{ inputs.DNS_SUBDOMAIN }}
         GH_TOKEN: ${{ secrets.GIT_TOKEN_PERSONAL }}
         GH_HOSTNAME: ${{ inputs.GH_HOSTNAME }}
