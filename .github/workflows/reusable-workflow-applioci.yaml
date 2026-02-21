@@ -218,8 +218,17 @@ jobs:
           set -feoux
           echo "validating kustomization.yaml resources..."
           cd resources-generated/${CLUSTER_ENV}/${CLUSTER_NAME}
+          echo "======================================="
+          ls -rltha
+          
+          echo "======================================="
+          ls -rltha s3-connection
+                    
           mapfile -t yaml_files < <(find . -type f -name "*.yaml" ! -name "kustomization.yaml" -print | sed 's|^\./||')
           mapfile -t kustomize_resources < <(yq -r '.resources[]?' kustomization.yaml)
+
+          echo "======================================="
+          cat kustomization.yaml
 
           missing=false
           for file in "${yaml_files[@]}"; do
