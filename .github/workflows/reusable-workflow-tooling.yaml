@@ -210,23 +210,23 @@ jobs:
           # fi
 
 
-      - name: Pull old image and colordiff
-        # continue-on-error: true --- Note MZE: this was added because of the colordiff issue as far as I know, it can be removed
-        run: |
-          set -feu
-          echo "Pulling the current image from ECR"
-          flux pull artifact oci://${AWS_ECR_REPOSITORY}:latest \
-              --output deployed \
-              --provider aws  \
-              || true
-          
-          echo "Running colordiff..." 
-          DIFF_OUTPUT=$(diff -u deployed/manifests.yaml generated/manifests.yaml | colordiff)
-          if [ -n "$DIFF_OUTPUT" ]; then
-            echo "$DIFF_OUTPUT"
-          else
-            echo "No differences found."
-          fi
+#      - name: Pull old image and colordiff
+#        # continue-on-error: true --- Note MZE: this was added because of the colordiff issue as far as I know, it can be removed
+#        run: |
+#          set -feu
+#          echo "Pulling the current image from ECR"
+#          flux pull artifact oci://${AWS_ECR_REPOSITORY}:latest \
+#              --output deployed \
+#              --provider aws  \
+#              || true
+#
+#          echo "Running colordiff..."
+#          DIFF_OUTPUT=$(diff -u deployed/manifests.yaml generated/manifests.yaml | colordiff)
+#          if [ -n "$DIFF_OUTPUT" ]; then
+#            echo "$DIFF_OUTPUT"
+#          else
+#            echo "No differences found."
+#          fi
 
 
       - name: Push new image
