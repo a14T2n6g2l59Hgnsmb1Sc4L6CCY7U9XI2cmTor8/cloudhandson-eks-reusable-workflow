@@ -152,7 +152,7 @@ jobs:
                
             cd resources-generated/${CLUSTER_ENV}/${CLUSTER_NAME}
             
-            ls -rltha
+            ls -rltha s3-connection
           
           
             kustomize init --recursive --autodetect
