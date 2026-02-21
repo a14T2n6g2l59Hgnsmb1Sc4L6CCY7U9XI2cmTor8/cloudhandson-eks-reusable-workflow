@@ -151,6 +151,10 @@ jobs:
             done
                
             cd resources-generated/${CLUSTER_ENV}/${CLUSTER_NAME}
+            
+            ls -rltha
+          
+          
             kustomize init --recursive --autodetect
           else
             echo "if condition false"
